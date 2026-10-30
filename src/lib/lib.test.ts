@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { cityByCode } from "./cities";
 import { dailyProjection, forecast, totals } from "./budget";
-import { countdownLabel } from "./dates";
+import { countdownLabel, daysBetween } from "./dates";
+import { outsideRange, shiftItinerary } from "./itinerary";
 import { climateFor, suggestItems, syncSuggestions } from "./packing";
 
 const lis = cityByCode("LIS")!;
@@ -97,5 +98,27 @@ describe("packing", () => {
     expect(again.find((i) => i.key === "passaporte")!.packed).toBe(true);
     expect(again.find((i) => i.id === "u1")).toBeDefined();
     expect(again.find((i) => i.key === "camisetas")!.label).toBe("Camisetas (3)");
+  });
+});
+
+describe("datas e roteiro", () => {
+  it("daysBetween é exato e pode ser negativo", () => {
+    expect(daysBetween("2027-03-10", "2027-03-17")).toBe(7);
+    expect(daysBetween("2027-03-10", "2027-03-08")).toBe(-2);
+  });
+  it("desloca o roteiro junto com a viagem", () => {
+    const d = [{ date: "2027-03-10", activities: [{ id: "a", title: "x", cost: 1 }] }];
+    expect(shiftItinerary(d, 7)[0].date).toBe("2027-03-17");
+    expect(shiftItinerary(d, 0)).toBe(d);
+  });
+  it("acha atividades fora das datas e ignora dias vazios", () => {
+    const act = [{ id: "a", title: "x", cost: 1 }];
+    const d = [
+      { date: "2027-03-09", activities: act },
+      { date: "2027-03-12", activities: act },
+      { date: "2027-03-20", activities: [] },
+      { date: "2027-03-30", activities: act },
+    ];
+    expect(outsideRange(d, "2027-03-10", "2027-03-17").map((x) => x.date)).toEqual(["2027-03-09", "2027-03-30"]);
   });
 });

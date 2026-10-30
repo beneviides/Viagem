@@ -154,6 +154,8 @@ a { color:var(--brand); }
 textarea { padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font:inherit; width:100%; }
 textarea.notes { min-height:50vh; resize:vertical; line-height:1.5; }
 
+.notice { border-color:var(--accent); background:var(--warn-bg); }
+
 /* ---------- mala ---------- */
 h3 .count { float:right; font-variant-numeric:tabular-nums; letter-spacing:0; }
 .checklist { list-style:none; margin:0; padding:0; }

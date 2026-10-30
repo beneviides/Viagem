@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Activity, ItineraryDay, Trip } from "../types";
 import { brl, eachDay, fmtParts } from "../lib/dates";
+import { outsideRange } from "../lib/itinerary";
 import { uid } from "../store";
 
 interface Props {
@@ -18,8 +19,21 @@ export default function Itinerary({ trip, days, onChange }: Props) {
     onChange([...days.filter((d) => d.date !== date), { date, activities: fn(current) }]);
   };
 
+  const orphans = outsideRange(days, trip.departDate, trip.returnDate);
+  const orphanCount = orphans.reduce((s, d) => s + d.activities.length, 0);
+
   return (
     <>
+      {orphans.length > 0 && (
+        <section className="card notice" role="alert">
+          <p>
+            <b>{orphanCount} atividade(s)</b> em {orphans.length} dia(s) fora das datas da viagem. Elas não aparecem aqui nem entram na previsão de gastos.
+          </p>
+          <button className="secondary" style={{ marginTop: 10 }} onClick={() => onChange(days.filter((d) => !orphans.includes(d)))}>
+            Descartar essas atividades
+          </button>
+        </section>
+      )}
       <p className="muted">Custos das atividades (por pessoa) substituem a estimativa de passeios do dia na aba Gastos.</p>
       {dates.map((date) => (
         <DayCard

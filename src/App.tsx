@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { usePersistent } from "./store";
 import { Expense, Hotel, ItineraryDay, PackItem, Trip } from "./types";
 import { cityByCode } from "./lib/cities";
-import { addDays } from "./lib/dates";
+import { addDays, daysBetween } from "./lib/dates";
+import { shiftItinerary } from "./lib/itinerary";
 import { dailyProjection, forecast, totals } from "./lib/budget";
 import TripForm from "./components/TripForm";
 import Hotels from "./components/Hotels";
@@ -64,6 +65,13 @@ export default function App() {
   const [pack, setPack] = usePersistent<PackItem[]>("viagem.pack", []);
   const [notes, setNotes] = usePersistent<string>("viagem.notes", "");
 
+  // Adiar ou adiantar a viagem leva o roteiro junto, em vez de deixar as atividades em dias antigos.
+  const changeTrip = (next: Trip) => {
+    const delta = daysBetween(trip.departDate, next.departDate);
+    if (delta !== 0) setDays(shiftItinerary(days, delta));
+    setTrip(next);
+  };
+
   const destination = cityByCode(trip.destination);
   const origin = cityByCode(trip.origin);
 
@@ -82,7 +90,7 @@ export default function App() {
     <div className="app">
       <Pass trip={trip} origin={origin} destination={destination} />
       <main>
-        {tab === "Viagem" && <TripForm trip={trip} destination={destination} projection={projection} onChange={setTrip} />}
+        {tab === "Viagem" && <TripForm trip={trip} destination={destination} projection={projection} onChange={changeTrip} />}
         {tab === "Hotéis" && (
           <Hotels
             trip={trip}

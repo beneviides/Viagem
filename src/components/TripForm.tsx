@@ -1,7 +1,7 @@
 import { Trip } from "../types";
 import { CITIES, City } from "../lib/cities";
 import { DayProjection, summarizeProjection } from "../lib/budget";
-import { brl, fmtParts } from "../lib/dates";
+import { addDays, brl, daysBetween, fmtParts } from "../lib/dates";
 
 interface Props {
   trip: Trip;
@@ -13,6 +13,16 @@ interface Props {
 export default function TripForm({ trip, destination, projection, onChange }: Props) {
   const { perPersonDay, avgDay, days } = summarizeProjection(destination, projection, trip.travelers);
   const set = <K extends keyof Trip>(k: K, v: Trip[K]) => onChange({ ...trip, [k]: v });
+  // Mudar a ida mantém a duração: a volta acompanha. A volta nunca fica antes da ida.
+  const setDepart = (v: string) => {
+    if (!v) return;
+    const length = Math.max(0, daysBetween(trip.departDate, trip.returnDate));
+    onChange({ ...trip, departDate: v, returnDate: addDays(v, length) });
+  };
+  const setReturn = (v: string) => {
+    if (!v) return;
+    set("returnDate", v < trip.departDate ? trip.departDate : v);
+  };
   const cityOptions = CITIES.map((c) => (
     <option key={c.code} value={c.code}>
       {c.name} ({c.code}) · {c.country}
@@ -68,11 +78,11 @@ export default function TripForm({ trip, destination, projection, onChange }: Pr
           </label>
           <label>
             Ida
-            <input type="date" value={trip.departDate} onChange={(e) => set("departDate", e.target.value)} />
+            <input type="date" value={trip.departDate} onChange={(e) => setDepart(e.target.value)} />
           </label>
           <label>
             Volta
-            <input type="date" value={trip.returnDate} min={trip.departDate} onChange={(e) => set("returnDate", e.target.value)} />
+            <input type="date" value={trip.returnDate} min={trip.departDate} onChange={(e) => setReturn(e.target.value)} />
           </label>
           <label>
             Viajantes
