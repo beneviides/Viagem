@@ -10,7 +10,6 @@ export function forecast(opts: {
   departDate: string;
   returnDate: string;
   travelers: number;
-  flightPerPerson?: number;
   hotels: Hotel[];
   selectedHotelId?: string;
   roomsNeeded?: number;
@@ -22,7 +21,7 @@ export function forecast(opts: {
   const perNight = hotel?.pricePerNight ?? destination.hotelAvg;
   const rooms = opts.roomsNeeded ?? Math.ceil(travelers / 2);
   return {
-    voo: (opts.flightPerPerson ?? 0) * travelers,
+    voo: 0, // passagens são lançadas manualmente em Gastos
     hotel: perNight * nights * rooms,
     comida: destination.daily.comida * days * travelers,
     transporte: destination.daily.transporte * days * travelers,

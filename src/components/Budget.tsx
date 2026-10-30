@@ -21,7 +21,7 @@ interface Props {
 }
 
 export default function Budget({ trip, summary, expenses, onChange }: Props) {
-  const [category, setCategory] = useState<Category>("outros");
+  const [category, setCategory] = useState<Category>("voo");
   const [label, setLabel] = useState("");
   const [amount, setAmount] = useState("");
 
@@ -59,7 +59,7 @@ export default function Budget({ trip, summary, expenses, onChange }: Props) {
           </tbody>
         </table>
         <p className="muted">
-          Passagens e hospedagem usam o que você escolheu nas abas; sem escolha, passagens ficam em R$ 0 e hotel usa a média do destino.
+          A hospedagem usa o hotel escolhido (ou a média do destino). Lance o valor das passagens abaixo, na categoria Passagens.
         </p>
       </div>
       <div className="card">

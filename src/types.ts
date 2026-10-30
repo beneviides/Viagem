@@ -35,11 +35,3 @@ export interface ItineraryDay {
   date: string;
   activities: Activity[];
 }
-
-export interface FlightOffer {
-  date: string; // data de ida
-  returnDate: string;
-  price: number; // por pessoa, ida e volta, BRL
-  airline: string;
-  stops: number;
-}
