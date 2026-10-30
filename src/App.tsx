@@ -3,7 +3,7 @@ import { usePersistent } from "./store";
 import { Expense, Hotel, ItineraryDay, Trip } from "./types";
 import { cityByCode } from "./lib/cities";
 import { addDays } from "./lib/dates";
-import { forecast, totals } from "./lib/budget";
+import { dailyProjection, forecast, totals } from "./lib/budget";
 import TripForm from "./components/TripForm";
 import Hotels from "./components/Hotels";
 import Budget from "./components/Budget";
@@ -33,13 +33,13 @@ export default function App() {
   const destination = cityByCode(trip.destination);
   const origin = cityByCode(trip.origin);
 
-  const summary = useMemo(() => {
-    if (!destination) return undefined;
+  const { summary, projection } = useMemo(() => {
+    if (!destination) return { summary: undefined, projection: [] };
+    const projection = dailyProjection({ ...trip, destination, hotels, selectedHotelId, itinerary: days });
     const base = forecast({ ...trip, destination, hotels, selectedHotelId });
-    // Se o roteiro tem custos planejados, eles substituem a estimativa genérica de passeios.
-    const planned = days.flatMap((d) => d.activities).reduce((s, a) => s + a.cost * trip.travelers, 0);
-    if (planned > 0) base.passeios = planned;
-    return totals(base, expenses);
+    // Passeios: atividades planejadas no dia, ou a estimativa do destino nos dias sem roteiro.
+    base.passeios = projection.reduce((s, d) => s + d.passeios, 0);
+    return { summary: totals(base, expenses), projection };
   }, [destination, trip, hotels, selectedHotelId, expenses, days]);
 
   if (!destination || !origin || !summary) return <p>Cidade inválida.</p>;
@@ -72,7 +72,7 @@ export default function App() {
           />
         )}
         {tab === "Gastos" && (
-          <Budget trip={trip} summary={summary} expenses={expenses} onChange={setExpenses} />
+          <Budget trip={trip} destination={destination} summary={summary} projection={projection} expenses={expenses} onChange={setExpenses} />
         )}
         {tab === "Roteiro" && <Itinerary trip={trip} days={days} onChange={setDays} />}
       </main>

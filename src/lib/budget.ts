@@ -1,6 +1,6 @@
 import { City } from "./cities";
-import { Category, Expense, Hotel } from "../types";
-import { nightsBetween } from "./dates";
+import { Category, Expense, Hotel, ItineraryDay } from "../types";
+import { addDays, nightsBetween } from "./dates";
 
 export type Forecast = Record<Category, number>;
 
@@ -36,4 +36,42 @@ export function totals(base: Forecast, expenses: Expense[]): Forecast & { total:
   for (const e of expenses) t[e.category] += e.amount;
   const total = Object.values(t).reduce((a, b) => a + b, 0);
   return { ...t, total };
+}
+
+export interface DayProjection {
+  date: string;
+  comida: number;
+  transporte: number;
+  passeios: number;
+  hotel: number;
+  total: number; // grupo todo
+}
+
+/**
+ * Projeção de gasto para cada dia da viagem (grupo todo).
+ * Passeios usam o custo das atividades planejadas no dia; sem atividades, a estimativa do destino.
+ * A hospedagem conta nas noites (todos os dias, menos o último).
+ */
+export function dailyProjection(opts: {
+  destination: City;
+  departDate: string;
+  returnDate: string;
+  travelers: number;
+  hotels: Hotel[];
+  selectedHotelId?: string;
+  itinerary: ItineraryDay[];
+}): DayProjection[] {
+  const { destination, travelers } = opts;
+  const nights = nightsBetween(opts.departDate, opts.returnDate);
+  const perNight = opts.hotels.find((h) => h.id === opts.selectedHotelId)?.pricePerNight ?? destination.hotelAvg;
+  const rooms = Math.ceil(travelers / 2);
+  return Array.from({ length: nights + 1 }, (_, i) => {
+    const date = addDays(opts.departDate, i);
+    const planned = (opts.itinerary.find((d) => d.date === date)?.activities ?? []).reduce((s, a) => s + a.cost, 0);
+    const comida = destination.daily.comida * travelers;
+    const transporte = destination.daily.transporte * travelers;
+    const passeios = planned > 0 ? planned * travelers : destination.daily.passeios * travelers;
+    const hotel = i < nights ? perNight * rooms : 0;
+    return { date, comida, transporte, passeios, hotel, total: comida + transporte + passeios + hotel };
+  });
 }

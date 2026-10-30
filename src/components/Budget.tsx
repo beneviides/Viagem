@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Category, Expense, Trip } from "../types";
-import { Forecast } from "../lib/budget";
-import { brl } from "../lib/dates";
+import { DayProjection, Forecast } from "../lib/budget";
+import { City } from "../lib/cities";
+import { brl, fmtDate } from "../lib/dates";
 import { uid } from "../store";
 
 const LABELS: Record<Category, string> = {
@@ -15,16 +16,24 @@ const LABELS: Record<Category, string> = {
 
 interface Props {
   trip: Trip;
+  destination: City;
+  projection: DayProjection[];
   summary: Forecast & { total: number };
   expenses: Expense[];
   onChange: (e: Expense[]) => void;
 }
 
-export default function Budget({ trip, summary, expenses, onChange }: Props) {
+export default function Budget({ trip, destination, projection, summary, expenses, onChange }: Props) {
   const [category, setCategory] = useState<Category>("voo");
   const [label, setLabel] = useState("");
   const [amount, setAmount] = useState("");
 
+  const rooms = Math.ceil(trip.travelers / 2);
+  const hotelPerNight = projection[0] && projection[0].hotel > 0 ? projection[0].hotel / rooms : destination.hotelAvg;
+  const roomShare = (hotelPerNight * rooms) / trip.travelers; // diária dividida entre os viajantes
+  const { comida, transporte, passeios } = destination.daily;
+  const perPersonDay = comida + transporte + passeios + roomShare;
+  const avgDay = projection.length ? projection.reduce((s, d) => s + d.total, 0) / projection.length : 0;
   const diff = trip.budgetTotal - summary.total;
   const pct = trip.budgetTotal > 0 ? Math.min(100, (summary.total / trip.budgetTotal) * 100) : 0;
 
@@ -61,6 +70,32 @@ export default function Budget({ trip, summary, expenses, onChange }: Props) {
         <p className="muted">
           A hospedagem usa o hotel escolhido (ou a média do destino). Lance o valor das passagens abaixo, na categoria Passagens.
         </p>
+      </div>
+      <div className="card">
+        <h3>Projeção diária em {destination.name}</h3>
+        <p>
+          <strong>{brl(perPersonDay)}</strong> por pessoa/dia <span className="muted">(sem passagem; com hospedagem dividida por quarto)</span>
+        </p>
+        <p className="muted">
+          Alimentação {brl(destination.daily.comida)} · Transporte {brl(destination.daily.transporte)} · Passeios{" "}
+          {brl(destination.daily.passeios)} · Hotel {brl(roomShare)}
+        </p>
+        <p>
+          Grupo de {trip.travelers}: <strong>{brl(avgDay)}</strong> por dia em média ao longo de {projection.length} dias.
+        </p>
+        <table>
+          <tbody>
+            {projection.map((d, i) => (
+              <tr key={d.date}>
+                <td>
+                  Dia {i + 1} · {fmtDate(d.date)}
+                </td>
+                <td className="right">{brl(d.total)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="muted">Dias com atividades no Roteiro usam o custo planejado; os demais, a estimativa do destino.</p>
       </div>
       <div className="card">
         <h3>Lançar gasto extra</h3>
