@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { cityByCode } from "./cities";
 import { dailyProjection, forecast, totals } from "./budget";
 import { countdownLabel } from "./dates";
+import { climateFor, suggestItems, syncSuggestions } from "./packing";
 
 const lis = cityByCode("LIS")!;
 
@@ -54,5 +55,47 @@ describe("countdownLabel", () => {
   it("reconhece viagem em andamento e concluída", () => {
     expect(countdownLabel("2027-01-08", "2027-01-12", today)).toBe("Em viagem");
     expect(countdownLabel("2027-01-01", "2027-01-05", today)).toBe("Viagem concluída");
+  });
+});
+
+describe("packing", () => {
+  const gru = cityByCode("GRU")!;
+  const rio = cityByCode("GIG")!;
+  const nyc = cityByCode("JFK")!;
+  const trip = { origin: "GRU", destination: "LIS", departDate: "2027-01-10", returnDate: "2027-01-17", travelers: 1, budgetTotal: 0 };
+  const keys = (s: { key: string }[]) => s.map((x) => x.key);
+
+  it("viagem internacional pede passaporte e adaptador; nacional pede documento", () => {
+    expect(keys(suggestItems(trip, gru, lis))).toEqual(expect.arrayContaining(["passaporte", "adaptador", "seguro"]));
+    const dom = keys(suggestItems({ ...trip, destination: "GIG" }, gru, rio));
+    expect(dom).toContain("rg");
+    expect(dom).not.toContain("passaporte");
+  });
+  it("clima depende da latitude e do mês", () => {
+    expect(climateFor(lis, "2027-01-10")).toBe("mild"); // inverno ameno
+    expect(climateFor(cityByCode("CDG")!, "2027-01-10")).toBe("cold");
+    expect(climateFor(lis, "2027-07-10")).toBe("warm");
+    expect(climateFor(rio, "2027-01-10")).toBe("warm");
+    expect(climateFor(cityByCode("SCL")!, "2027-07-10")).toBe("mild"); // inverno no hemisfério sul
+    expect(climateFor(cityByCode("SCL")!, "2027-01-10")).toBe("warm");
+  });
+  it("limita as peças de roupa a uma semana e conta as noites", () => {
+    const long = suggestItems({ ...trip, returnDate: "2027-02-10" }, gru, lis);
+    expect(long.find((s) => s.key === "camisetas")!.label).toBe("Camisetas (7)");
+    const short = suggestItems({ ...trip, returnDate: "2027-01-12" }, gru, lis);
+    expect(short.find((s) => s.key === "camisetas")!.label).toBe("Camisetas (3)");
+  });
+  it("só sugere travesseiro de pescoço em voo longo", () => {
+    expect(keys(suggestItems(trip, gru, nyc))).toContain("descanso");
+    expect(keys(suggestItems({ ...trip, destination: "GIG" }, gru, rio))).not.toContain("descanso");
+  });
+  it("sincronizar preserva itens marcados e do usuário, sem duplicar", () => {
+    const first = syncSuggestions([], suggestItems(trip, gru, lis));
+    const marked = first.map((i) => (i.key === "passaporte" ? { ...i, packed: true } : i)).concat({ id: "u1", label: "Violão", category: "Extras" as const, packed: false });
+    const again = syncSuggestions(marked, suggestItems({ ...trip, returnDate: "2027-01-12" }, gru, lis));
+    expect(again).toHaveLength(marked.length);
+    expect(again.find((i) => i.key === "passaporte")!.packed).toBe(true);
+    expect(again.find((i) => i.id === "u1")).toBeDefined();
+    expect(again.find((i) => i.key === "camisetas")!.label).toBe("Camisetas (3)");
   });
 });

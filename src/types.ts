@@ -35,3 +35,14 @@ export interface ItineraryDay {
   date: string;
   activities: Activity[];
 }
+
+export type PackCategory = "Documentos" | "Roupas" | "Higiene" | "Saúde" | "Eletrônicos" | "Extras";
+
+export interface PackItem {
+  id: string;
+  label: string;
+  category: PackCategory;
+  packed: boolean;
+  /** Presente nos itens sugeridos; permite atualizar o texto sem duplicar. */
+  key?: string;
+}

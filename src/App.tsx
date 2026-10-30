@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { usePersistent } from "./store";
-import { Expense, Hotel, ItineraryDay, Trip } from "./types";
+import { Expense, Hotel, ItineraryDay, PackItem, Trip } from "./types";
 import { cityByCode } from "./lib/cities";
 import { addDays } from "./lib/dates";
 import { dailyProjection, forecast, totals } from "./lib/budget";
@@ -10,6 +10,7 @@ import Budget from "./components/Budget";
 import Itinerary from "./components/Itinerary";
 import Pass from "./components/Pass";
 import Notes from "./components/Notes";
+import Packing from "./components/Packing";
 
 const today = new Date().toISOString().slice(0, 10);
 const DEFAULT_TRIP: Trip = {
@@ -21,7 +22,7 @@ const DEFAULT_TRIP: Trip = {
   budgetTotal: 20000,
 };
 
-const TABS = ["Viagem", "Hotéis", "Gastos", "Roteiro", "Notas"] as const;
+const TABS = ["Viagem", "Hotéis", "Gastos", "Roteiro", "Mala", "Notas"] as const;
 type Tab = (typeof TABS)[number];
 
 const ICONS: Record<Tab, JSX.Element> = {
@@ -44,6 +45,12 @@ const ICONS: Record<Tab, JSX.Element> = {
       <path d="M8 3v4M16 3v4M4 10h16M8 14h4M8 17.5h7" />
     </>
   ),
+  Mala: (
+    <>
+      <rect x="4" y="7" width="16" height="13" rx="2" />
+      <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M4 12h16M10 12v2h4v-2" />
+    </>
+  ),
   Notas: <path d="M5 3h10l4 4v14H5zM14 3v5h5M8 13h8M8 17h5" />,
 };
 
@@ -54,6 +61,7 @@ export default function App() {
   const [selectedHotelId, setSelectedHotelId] = usePersistent<string | undefined>("viagem.hotel", undefined);
   const [expenses, setExpenses] = usePersistent<Expense[]>("viagem.expenses", []);
   const [days, setDays] = usePersistent<ItineraryDay[]>("viagem.days", []);
+  const [pack, setPack] = usePersistent<PackItem[]>("viagem.pack", []);
   const [notes, setNotes] = usePersistent<string>("viagem.notes", "");
 
   const destination = cityByCode(trip.destination);
@@ -89,6 +97,7 @@ export default function App() {
           <Budget trip={trip} destination={destination} summary={summary} projection={projection} expenses={expenses} onChange={setExpenses} />
         )}
         {tab === "Roteiro" && <Itinerary trip={trip} days={days} onChange={setDays} />}
+        {tab === "Mala" && <Packing trip={trip} origin={origin} destination={destination} items={pack} onChange={setPack} />}
         {tab === "Notas" && <Notes value={notes} onChange={setNotes} />}
       </main>
       <nav className="tabbar" aria-label="Seções">

@@ -154,6 +154,16 @@ a { color:var(--brand); }
 textarea { padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font:inherit; width:100%; }
 textarea.notes { min-height:50vh; resize:vertical; line-height:1.5; }
 
+/* ---------- mala ---------- */
+h3 .count { float:right; font-variant-numeric:tabular-nums; letter-spacing:0; }
+.checklist { list-style:none; margin:0; padding:0; }
+.checklist li { display:flex; align-items:center; border-top:1px solid var(--line); }
+.checklist li:first-child { border-top:0; }
+.check { flex:1; display:flex; align-items:center; gap:12px; min-height:48px; padding:0; text-align:left; background:transparent; color:var(--ink); border-radius:0; font:400 15px/1.35 var(--body); }
+.check .box { flex:none; display:grid; place-items:center; width:24px; height:24px; border-radius:7px; box-shadow:inset 0 0 0 2px var(--brand); color:var(--on-brand); }
+.check.on .box { background:var(--brand); }
+.check.on .lbl { color:var(--muted); text-decoration:line-through; }
+
 /* ---------- barra inferior ---------- */
 .tabbar { position:fixed; left:0; right:0; bottom:0; z-index:20; background:var(--surface); border-top:1px solid var(--line);
   padding-left:max(8px, env(safe-area-inset-left, 0px)); padding-right:max(8px, env(safe-area-inset-right, 0px)); padding-bottom:env(safe-area-inset-bottom, 0px); }

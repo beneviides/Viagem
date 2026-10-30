@@ -8,6 +8,8 @@ export interface City {
   daily: { comida: number; transporte: number; passeios: number };
   /** Diária média de hotel (quarto duplo, categoria 3 estrelas) em BRL. */
   hotelAvg: number;
+  /** Inverno com frio de verdade (casaco pesado). */
+  coldWinter?: boolean;
   /** Curiosidade ou dica rápida do destino. */
   tip: string;
 }
@@ -19,11 +21,11 @@ export const CITIES: City[] = [
   { code: "FLN", name: "Florianópolis", country: "Brasil", lat: -27.67, lon: -48.55, daily: { comida: 100, transporte: 45, passeios: 80 }, hotelAvg: 390, tip: "Florianópolis fica numa ilha e tem mais de 40 praias. Escolha uma por dia e o roteiro se monta sozinho." },
   { code: "REC", name: "Recife", country: "Brasil", lat: -8.13, lon: -34.92, daily: { comida: 90, transporte: 30, passeios: 60 }, hotelAvg: 290, tip: "Recife é chamada de Veneza brasileira por causa dos rios e das dezenas de pontes que cortam a cidade." },
   { code: "LIS", name: "Lisboa", country: "Portugal", lat: 38.77, lon: -9.13, daily: { comida: 230, transporte: 60, passeios: 150 }, hotelAvg: 650, tip: "Experimente o pastel de nata ainda quentinho, com canela por cima. Vale repetir." },
-  { code: "MAD", name: "Madri", country: "Espanha", lat: 40.49, lon: -3.57, daily: { comida: 250, transporte: 60, passeios: 150 }, hotelAvg: 700, tip: "O jantar em Madri costuma começar por volta das 21h. Se bater a fome antes, peça tapas." },
-  { code: "CDG", name: "Paris", country: "França", lat: 49.01, lon: 2.55, daily: { comida: 330, transporte: 80, passeios: 200 }, hotelAvg: 950, tip: "Muitos museus fecham um dia por semana (o Louvre fecha às terças). Confira antes de montar o roteiro." },
+  { code: "MAD", name: "Madri", country: "Espanha", lat: 40.49, lon: -3.57, daily: { comida: 250, transporte: 60, passeios: 150 }, hotelAvg: 700, coldWinter: true, tip: "O jantar em Madri costuma começar por volta das 21h. Se bater a fome antes, peça tapas." },
+  { code: "CDG", name: "Paris", country: "França", lat: 49.01, lon: 2.55, daily: { comida: 330, transporte: 80, passeios: 200 }, hotelAvg: 950, coldWinter: true, tip: "Muitos museus fecham um dia por semana (o Louvre fecha às terças). Confira antes de montar o roteiro." },
   { code: "FCO", name: "Roma", country: "Itália", lat: 41.8, lon: 12.25, daily: { comida: 280, transporte: 60, passeios: 180 }, hotelAvg: 800, tip: "Em Roma dá para encher a garrafinha nas fontes públicas: a água é potável e de graça." },
-  { code: "LHR", name: "Londres", country: "Reino Unido", lat: 51.47, lon: -0.45, daily: { comida: 350, transporte: 100, passeios: 200 }, hotelAvg: 1000, tip: "Vários museus grandes de Londres, como o British Museum, têm entrada gratuita." },
-  { code: "JFK", name: "Nova York", country: "EUA", lat: 40.64, lon: -73.78, daily: { comida: 400, transporte: 100, passeios: 250 }, hotelAvg: 1300, tip: "O metrô de Nova York funciona 24 horas por dia, todos os dias." },
+  { code: "LHR", name: "Londres", country: "Reino Unido", lat: 51.47, lon: -0.45, daily: { comida: 350, transporte: 100, passeios: 200 }, hotelAvg: 1000, coldWinter: true, tip: "Vários museus grandes de Londres, como o British Museum, têm entrada gratuita." },
+  { code: "JFK", name: "Nova York", country: "EUA", lat: 40.64, lon: -73.78, daily: { comida: 400, transporte: 100, passeios: 250 }, hotelAvg: 1300, coldWinter: true, tip: "O metrô de Nova York funciona 24 horas por dia, todos os dias." },
   { code: "MIA", name: "Miami", country: "EUA", lat: 25.79, lon: -80.29, daily: { comida: 350, transporte: 120, passeios: 220 }, hotelAvg: 1000, tip: "O inverno em Miami é ameno. Mesmo assim, protetor solar na mala, o ano todo." },
   { code: "EZE", name: "Buenos Aires", country: "Argentina", lat: -34.82, lon: -58.54, daily: { comida: 150, transporte: 40, passeios: 100 }, hotelAvg: 450, tip: "A livraria El Ateneo Grand Splendid funciona num antigo teatro e está entre as mais bonitas do mundo." },
   { code: "SCL", name: "Santiago", country: "Chile", lat: -33.39, lon: -70.79, daily: { comida: 200, transporte: 50, passeios: 120 }, hotelAvg: 520, tip: "Em dias de céu limpo dá para ver a Cordilheira dos Andes direto da cidade." },
