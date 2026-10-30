@@ -1,6 +1,6 @@
 import { City } from "../lib/cities";
 import { Trip } from "../types";
-import { fmtParts, nightsBetween } from "../lib/dates";
+import { countdownLabel, fmtParts, nightsBetween } from "../lib/dates";
 
 const short = (iso: string) => {
   const p = fmtParts(iso);
@@ -10,6 +10,10 @@ const short = (iso: string) => {
 export default function Pass({ trip, origin, destination }: { trip: Trip; origin: City; destination: City }) {
   return (
     <section className="pass" aria-label={`Viagem de ${origin.name} para ${destination.name}`}>
+      <div className="pass-top">
+        <span>Cartão de embarque</span>
+        <b>{countdownLabel(trip.departDate, trip.returnDate)}</b>
+      </div>
       <div className="pass-route">
         <div className="leg">
           <span className="code">{origin.code}</span>

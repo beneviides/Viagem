@@ -1,7 +1,7 @@
 import { Trip } from "../types";
 import { CITIES, City } from "../lib/cities";
 import { DayProjection, summarizeProjection } from "../lib/budget";
-import { brl } from "../lib/dates";
+import { brl, fmtParts } from "../lib/dates";
 
 interface Props {
   trip: Trip;
@@ -37,6 +37,19 @@ export default function TripForm({ trip, destination, projection, onChange }: Pr
         <p className="muted" style={{ marginTop: 12 }}>
           Detalhes por dia e por categoria na aba Gastos.
         </p>
+      </section>
+      <section className="card fun">
+        <div className="stamp" aria-hidden="true">
+          <span className="stamp-top">{destination.country}</span>
+          <span className="stamp-code">{destination.code}</span>
+          <span className="stamp-date">
+            {fmtParts(trip.departDate).day} {fmtParts(trip.departDate).month}
+          </span>
+        </div>
+        <div>
+          <h3>Você sabia?</h3>
+          <p>{destination.tip}</p>
+        </div>
       </section>
       <section className="card">
         <h3>Sua viagem</h3>

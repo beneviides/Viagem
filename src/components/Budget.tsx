@@ -58,6 +58,15 @@ export default function Budget({ trip, destination, projection, summary, expense
           {" · "}
           {brl(summary.total / trip.travelers)} por pessoa
         </p>
+        <p className={`mood ${diff < 0 ? "bad" : pct >= 85 ? "warn" : ""}`}>
+          {diff < 0
+            ? "Passou do orçamento. Que tal rever o hotel ou os passeios?"
+            : pct >= 85
+              ? "Cabe, mas no limite. Sobrou pouco para imprevistos."
+              : pct >= 50
+                ? "Dentro do orçamento, com folga para um passeio extra."
+                : "Muita folga no orçamento. Dá para sonhar mais alto."}
+        </p>
         <div className="seg" role="img" aria-label="Gastos por categoria">
           {parts.map((c) => (
             <span key={c} title={`${LABELS[c]}: ${brl(summary[c])}`} style={{ flexGrow: summary[c], background: COLOR[c] }} />

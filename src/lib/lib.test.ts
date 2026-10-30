@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { cityByCode } from "./cities";
 import { dailyProjection, forecast, totals } from "./budget";
+import { countdownLabel } from "./dates";
 
 const lis = cityByCode("LIS")!;
 
@@ -40,5 +41,18 @@ describe("dailyProjection", () => {
     const p = dailyProjection(opts);
     const f = forecast({ ...opts });
     expect(p.reduce((s, d) => s + d.total, 0)).toBe(f.hotel + f.comida + f.transporte + f.passeios);
+  });
+});
+
+describe("countdownLabel", () => {
+  const today = new Date(2027, 0, 10);
+  it("conta os dias até o embarque", () => {
+    expect(countdownLabel("2027-01-20", "2027-01-27", today)).toBe("Embarque em 10 dias");
+    expect(countdownLabel("2027-01-11", "2027-01-18", today)).toBe("Embarque amanhã");
+    expect(countdownLabel("2027-01-10", "2027-01-17", today)).toBe("Embarque hoje");
+  });
+  it("reconhece viagem em andamento e concluída", () => {
+    expect(countdownLabel("2027-01-08", "2027-01-12", today)).toBe("Em viagem");
+    expect(countdownLabel("2027-01-01", "2027-01-05", today)).toBe("Viagem concluída");
   });
 });

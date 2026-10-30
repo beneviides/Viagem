@@ -34,6 +34,8 @@ export default function Itinerary({ trip, days, onChange }: Props) {
   );
 }
 
+const QUICK = ["☕ Café da manhã", "🍽️ Almoço", "🏛️ Museu", "🚶 Passeio a pé", "🌅 Pôr do sol", "🍷 Jantar"];
+
 function DayCard(props: { date: string; activities: Activity[]; onAdd: (a: Activity) => void; onRemove: (id: string) => void }) {
   const [time, setTime] = useState("");
   const [title, setTitle] = useState("");
@@ -78,6 +80,13 @@ function DayCard(props: { date: string; activities: Activity[]; onAdd: (a: Activ
           </ul>
         )}
         {total > 0 && <p className="muted" style={{ marginBottom: 10 }}>Total do dia: {brl(total)} por pessoa</p>}
+        <div className="quick" aria-label="Atalhos de atividade">
+          {QUICK.map((q) => (
+            <button key={q} type="button" onClick={() => setTitle(q)}>
+              {q}
+            </button>
+          ))}
+        </div>
         <div className="form inline">
           <input type="time" aria-label="Horário" value={time} onChange={(e) => setTime(e.target.value)} />
           <input placeholder="Atividade" aria-label="Atividade" value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} />
