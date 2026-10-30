@@ -5,11 +5,14 @@
 :root[data-theme="dark"] { --bg:#10151c; --card:#18202b; --ink:#e8edf3; --muted:#92a0b2; --line:#2a3544; color-scheme:dark; }
 * { box-sizing: border-box; }
 body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.4 system-ui,sans-serif; }
-.app { max-width:720px; margin:0 auto; padding-block:0 48px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+.app { max-width:720px; margin:0 auto; padding-block:0 calc(84px + env(safe-area-inset-bottom, 0px)); padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
 header h1 { margin:20px 0 0; } header p { margin:4px 0 12px; color:var(--muted); }
-nav { display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; }
-nav button { flex:1; white-space:nowrap; background:var(--card); color:var(--ink); border:1px solid var(--line); }
-nav button.active { background:var(--brand); color:#fff; border-color:var(--brand); }
+.tabbar { position:fixed; left:0; right:0; bottom:0; z-index:20; background:var(--card); border-top:1px solid var(--line);
+  padding-left:max(8px, env(safe-area-inset-left, 0px)); padding-right:max(8px, env(safe-area-inset-right, 0px)); padding-bottom:env(safe-area-inset-bottom, 0px); }
+.tabbar-inner { display:flex; max-width:720px; margin:0 auto; }
+.tabbar button { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 4px 10px; min-height:56px; background:transparent; color:var(--muted); border-radius:0; font-size:12px; }
+.tabbar button.active { color:var(--brand); font-weight:600; }
+.tabbar button:focus-visible { outline:2px solid var(--brand); outline-offset:-2px; }
 button { padding:8px 12px; border-radius:8px; border:0; background:var(--brand); color:#fff; font:inherit; cursor:pointer; }
 button.ghost { background:transparent; color:var(--muted); padding:4px 8px; }
 input, select { width:100%; padding:8px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font:inherit; }

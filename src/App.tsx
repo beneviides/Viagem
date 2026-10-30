@@ -22,6 +22,28 @@ const DEFAULT_TRIP: Trip = {
 const TABS = ["Viagem", "Hotéis", "Gastos", "Roteiro"] as const;
 type Tab = (typeof TABS)[number];
 
+const ICONS: Record<Tab, JSX.Element> = {
+  Viagem: <path d="M2 16l20-8-6 14-3-6-6-2 12-6" />,
+  Hotéis: (
+    <>
+      <path d="M3 20V8M3 14h18v6M21 14v-2a3 3 0 0 0-3-3h-7v5" />
+      <circle cx="7" cy="11" r="1.5" />
+    </>
+  ),
+  Gastos: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M14.5 9.5c-.5-1-1.4-1.5-2.5-1.5-1.4 0-2.5.8-2.5 2s1 1.7 2.5 2 2.5.8 2.5 2-1.1 2-2.5 2c-1.1 0-2-.5-2.5-1.5M12 6.5V8M12 16v1.5" />
+    </>
+  ),
+  Roteiro: (
+    <>
+      <rect x="4" y="5" width="16" height="16" rx="2" />
+      <path d="M8 3v4M16 3v4M4 10h16M8 14h4M8 17.5h7" />
+    </>
+  ),
+};
+
 export default function App() {
   const [tab, setTab] = useState<Tab>("Viagem");
   const [trip, setTrip] = usePersistent<Trip>("viagem.trip", DEFAULT_TRIP);
@@ -52,13 +74,6 @@ export default function App() {
           {origin.name} → {destination.name} · {trip.travelers} pessoa(s)
         </p>
       </header>
-      <nav>
-        {TABS.map((t) => (
-          <button key={t} className={t === tab ? "active" : ""} onClick={() => setTab(t)}>
-            {t}
-          </button>
-        ))}
-      </nav>
       <main>
         {tab === "Viagem" && <TripForm trip={trip} destination={destination} projection={projection} onChange={setTrip} />}
         {tab === "Hotéis" && (
@@ -76,6 +91,18 @@ export default function App() {
         )}
         {tab === "Roteiro" && <Itinerary trip={trip} days={days} onChange={setDays} />}
       </main>
+      <nav className="tabbar" aria-label="Seções">
+        <div className="tabbar-inner">
+          {TABS.map((t) => (
+            <button key={t} className={t === tab ? "active" : ""} aria-current={t === tab ? "page" : undefined} onClick={() => setTab(t)}>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                {ICONS[t]}
+              </svg>
+              <span>{t}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }
