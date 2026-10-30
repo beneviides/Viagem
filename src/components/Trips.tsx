@@ -27,15 +27,28 @@ export default function Trips({ ws, onOpen, onCreate, onDuplicate, onRemove, onI
 
   const backup = () => exportBackup(ws);
 
-  const download = () => {
+  const download = async () => {
+    const filename = `viagem-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    // Dentro do claude.ai o download direto é bloqueado: lá o arquivo é entregue pela capacidade `downloads`.
+    try {
+      const host = (window as unknown as { claude?: { use?: (n: string) => Promise<unknown> } }).claude;
+      const dl = (await host?.use?.("downloads")) as { save: (r: { filename: string; data: string }) => Promise<unknown> } | null | undefined;
+      if (dl) {
+        await dl.save({ filename, data: backup() });
+        return setMsg({ ok: true, text: "Backup salvo." });
+      }
+    } catch (e) {
+      if ((e as { code?: string })?.code === "declined") return setMsg({ ok: false, text: "Download cancelado." });
+      /* qualquer outro erro: tenta o download comum abaixo */
+    }
     try {
       const url = URL.createObjectURL(new Blob([backup()], { type: "application/json" }));
       const a = document.createElement("a");
       a.href = url;
-      a.download = `viagem-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
-      setMsg({ ok: true, text: "Backup gerado. Se nada foi baixado, use “Copiar texto”." });
+      setMsg({ ok: true, text: "Download iniciado. Se o arquivo não aparecer, use “Copiar texto”." });
     } catch {
       setShown(backup());
       setMsg({ ok: false, text: "Não foi possível baixar aqui. Copie o texto abaixo e guarde onde preferir." });
