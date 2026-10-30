@@ -75,3 +75,21 @@ export function dailyProjection(opts: {
     return { date, comida, transporte, passeios, hotel, total: comida + transporte + passeios + hotel };
   });
 }
+
+export interface ProjectionSummary {
+  /** Custo por pessoa/dia, sem passagem, com a diária do hotel dividida entre os viajantes. */
+  perPersonDay: number;
+  hotelShare: number;
+  /** Média diária do grupo ao longo da viagem. */
+  avgDay: number;
+  days: number;
+}
+
+export function summarizeProjection(destination: City, projection: DayProjection[], travelers: number): ProjectionSummary {
+  const rooms = Math.ceil(travelers / 2);
+  const hotelPerNight = projection[0] && projection[0].hotel > 0 ? projection[0].hotel / rooms : destination.hotelAvg;
+  const hotelShare = (hotelPerNight * rooms) / travelers;
+  const { comida, transporte, passeios } = destination.daily;
+  const avgDay = projection.length ? projection.reduce((s, d) => s + d.total, 0) / projection.length : 0;
+  return { perPersonDay: comida + transporte + passeios + hotelShare, hotelShare, avgDay, days: projection.length };
+}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Category, Expense, Trip } from "../types";
-import { DayProjection, Forecast } from "../lib/budget";
+import { DayProjection, Forecast, summarizeProjection } from "../lib/budget";
 import { City } from "../lib/cities";
 import { brl, fmtDate } from "../lib/dates";
 import { uid } from "../store";
@@ -28,12 +28,7 @@ export default function Budget({ trip, destination, projection, summary, expense
   const [label, setLabel] = useState("");
   const [amount, setAmount] = useState("");
 
-  const rooms = Math.ceil(trip.travelers / 2);
-  const hotelPerNight = projection[0] && projection[0].hotel > 0 ? projection[0].hotel / rooms : destination.hotelAvg;
-  const roomShare = (hotelPerNight * rooms) / trip.travelers; // diária dividida entre os viajantes
-  const { comida, transporte, passeios } = destination.daily;
-  const perPersonDay = comida + transporte + passeios + roomShare;
-  const avgDay = projection.length ? projection.reduce((s, d) => s + d.total, 0) / projection.length : 0;
+  const { perPersonDay, hotelShare: roomShare, avgDay } = summarizeProjection(destination, projection, trip.travelers);
   const diff = trip.budgetTotal - summary.total;
   const pct = trip.budgetTotal > 0 ? Math.min(100, (summary.total / trip.budgetTotal) * 100) : 0;
 

@@ -60,7 +60,7 @@ export default function App() {
         ))}
       </nav>
       <main>
-        {tab === "Viagem" && <TripForm trip={trip} onChange={setTrip} />}
+        {tab === "Viagem" && <TripForm trip={trip} destination={destination} projection={projection} onChange={setTrip} />}
         {tab === "Hotéis" && (
           <Hotels
             trip={trip}
