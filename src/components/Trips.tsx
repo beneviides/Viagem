@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { TripData, Workspace } from "../types";
 import { exportBackup, parseBackup, tripTitle } from "../lib/storage";
 import { fmtParts, nightsBetween } from "../lib/dates";
+import { promptInstall, usePwa } from "../pwa";
 
 interface Props {
   ws: Workspace;
@@ -24,6 +25,7 @@ export default function Trips({ ws, onOpen, onCreate, onDuplicate, onRemove, onI
   const [shown, setShown] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const pwa = usePwa();
 
   const backup = () => exportBackup(ws);
 
@@ -133,6 +135,27 @@ export default function Trips({ ws, onOpen, onCreate, onDuplicate, onRemove, onI
           Nova viagem
         </button>
       </section>
+
+      {pwa.offlineReady && !pwa.standalone && (
+        <section className="card">
+          <h3>Instalar no celular</h3>
+          <p>O app abre como um aplicativo, com ícone na tela inicial, e funciona sem internet.</p>
+          {pwa.canPrompt ? (
+            <button style={{ marginTop: 12, width: "100%" }} onClick={promptInstall}>
+              Instalar app
+            </button>
+          ) : (
+            <ul className="muted how-to">
+              <li>
+                <b>iPhone (Safari):</b> toque em Compartilhar e depois em “Adicionar à Tela de Início”.
+              </li>
+              <li>
+                <b>Android (Chrome):</b> abra o menu ⋮ e toque em “Instalar app” ou “Adicionar à tela inicial”.
+              </li>
+            </ul>
+          )}
+        </section>
+      )}
 
       <section className="card">
         <h3>Backup</h3>

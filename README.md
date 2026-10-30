@@ -9,7 +9,16 @@ npm test        # testes da lógica
 npm run build
 ```
 
+## Instalar no celular e usar offline
+O app é um PWA: depois de aberto uma vez com internet, funciona sem conexão e pode ser instalado (iPhone: Compartilhar > Adicionar à Tela de Início; Android: menu ⋮ > Instalar app). Quando sai uma versão nova, aparece um aviso com o botão "Atualizar". O offline só vale quando o app está hospedado em um endereço próprio (https); dentro de páginas que bloqueiam service workers ele roda normalmente, só online.
+
+## Publicar
+O workflow `.github/workflows/deploy.yml` publica no GitHub Pages a cada push na `main`. Ative uma vez em **Settings > Pages > Build and deployment > Source: GitHub Actions**. O endereço fica em `https://<usuário>.github.io/Viagem/`.
+
+## Backup
+Os dados ficam só no aparelho. Em "Minhas viagens" há exportar/importar (arquivo ou texto) e várias viagens.
+
 ## Próximos passos
 - Busca automática de hotéis (API + backend)
-- Mais cidades / busca de destino por autocomplete
+- Destinos livres e moeda do destino
 - Conversão de moedas e exportar roteiro (PDF/compartilhar)

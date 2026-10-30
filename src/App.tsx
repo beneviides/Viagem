@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useWorkspace } from "./store";
+import { applyUpdate, useOffline, usePwa } from "./pwa";
 import { Expense, Hotel, ItineraryDay, PackItem, Trip } from "./types";
 import { cityByCode } from "./lib/cities";
 import { daysBetween } from "./lib/dates";
@@ -48,6 +49,8 @@ const ICONS: Record<Tab, JSX.Element> = {
 
 export default function App() {
   const [tab, setTab] = useState<Tab | "Viagens">("Viagem");
+  const offline = useOffline();
+  const pwa = usePwa();
   const { ws, active, update, select, create, duplicate, remove, importTrips } = useWorkspace();
   const { trip, hotels, selectedHotelId, expenses, days, pack, notes } = active;
   const setTrip = (v: Trip) => update({ trip: v });
@@ -83,7 +86,18 @@ export default function App() {
 
   return (
     <div className="app">
+      {pwa.updateReady && (
+        <div className="banner" role="status">
+          <span>Há uma versão nova do app.</span>
+          <button onClick={applyUpdate}>Atualizar</button>
+        </div>
+      )}
       <Pass trip={trip} origin={origin} destination={destination} tripCount={ws.trips.length} onOpenTrips={() => setTab("Viagens")} />
+      {offline && (
+        <p className="offline" role="status">
+          Sem internet. Tudo continua funcionando e fica salvo no aparelho.
+        </p>
+      )}
       <main>
         {tab === "Viagens" && (
           <Trips

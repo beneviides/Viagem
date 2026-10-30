@@ -109,6 +109,12 @@ button.ghost { background:transparent; color:var(--muted); min-width:44px; paddi
 .days .amt small { font-size:11px; color:var(--accent); font-weight:600; }
 .days .d { font-size:13px; color:var(--muted); }
 
+/* ---------- instalação e offline ---------- */
+.banner { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; padding:10px 12px 10px 16px; border-radius:12px; background:var(--accent); color:#fff; font-weight:600; }
+.banner button { min-height:36px; background:#fff; color:#0e2a33; }
+.offline { margin-top:12px; padding:8px 12px; border-radius:10px; background:var(--warn-bg); color:var(--accent); font-weight:600; font-size:13px; }
+.how-to { margin:10px 0 0; padding-left:18px; display:grid; gap:6px; }
+
 /* ---------- viagens e backup ---------- */
 button.danger { background:var(--bad); color:#fff; }
 button:disabled { opacity:.45; cursor:not-allowed; }
