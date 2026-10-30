@@ -58,8 +58,8 @@ main { display:grid; gap:14px; margin-top:14px; }
 .card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; }
 .form { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); }
 label { display:flex; flex-direction:column; gap:6px; font:500 13px/1.2 var(--body); color:var(--muted); }
-input, select { width:100%; min-height:44px; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font:inherit; }
-input:focus-visible, select:focus-visible, button:focus-visible { outline:2px solid var(--brand); outline-offset:1px; }
+input, select, textarea { width:100%; min-height:44px; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font:inherit; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline:2px solid var(--brand); outline-offset:1px; }
 button { min-height:44px; padding:0 16px; border-radius:10px; border:0; background:var(--brand); color:var(--on-brand); font:600 14px var(--body); cursor:pointer; }
 button.secondary { background:transparent; color:var(--brand); box-shadow:inset 0 0 0 1.5px var(--brand); }
 button.secondary.on { background:var(--ok-bg); color:var(--ok); box-shadow:inset 0 0 0 1.5px var(--ok); }
@@ -131,6 +131,9 @@ a { color:var(--brand); }
   .pass-stub dd { font-size:15px; }
   .pass-stub dt { font-size:10px; letter-spacing:.06em; }
 }
+
+textarea { padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font:inherit; width:100%; }
+textarea.notes { min-height:50vh; resize:vertical; line-height:1.5; }
 
 /* ---------- barra inferior ---------- */
 .tabbar { position:fixed; left:0; right:0; bottom:0; z-index:20; background:var(--surface); border-top:1px solid var(--line);

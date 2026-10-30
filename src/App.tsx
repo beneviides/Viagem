@@ -9,6 +9,7 @@ import Hotels from "./components/Hotels";
 import Budget from "./components/Budget";
 import Itinerary from "./components/Itinerary";
 import Pass from "./components/Pass";
+import Notes from "./components/Notes";
 
 const today = new Date().toISOString().slice(0, 10);
 const DEFAULT_TRIP: Trip = {
@@ -20,7 +21,7 @@ const DEFAULT_TRIP: Trip = {
   budgetTotal: 20000,
 };
 
-const TABS = ["Viagem", "Hotéis", "Gastos", "Roteiro"] as const;
+const TABS = ["Viagem", "Hotéis", "Gastos", "Roteiro", "Notas"] as const;
 type Tab = (typeof TABS)[number];
 
 const ICONS: Record<Tab, JSX.Element> = {
@@ -43,6 +44,7 @@ const ICONS: Record<Tab, JSX.Element> = {
       <path d="M8 3v4M16 3v4M4 10h16M8 14h4M8 17.5h7" />
     </>
   ),
+  Notas: <path d="M5 3h10l4 4v14H5zM14 3v5h5M8 13h8M8 17h5" />,
 };
 
 export default function App() {
@@ -52,6 +54,7 @@ export default function App() {
   const [selectedHotelId, setSelectedHotelId] = usePersistent<string | undefined>("viagem.hotel", undefined);
   const [expenses, setExpenses] = usePersistent<Expense[]>("viagem.expenses", []);
   const [days, setDays] = usePersistent<ItineraryDay[]>("viagem.days", []);
+  const [notes, setNotes] = usePersistent<string>("viagem.notes", "");
 
   const destination = cityByCode(trip.destination);
   const origin = cityByCode(trip.origin);
@@ -86,6 +89,7 @@ export default function App() {
           <Budget trip={trip} destination={destination} summary={summary} projection={projection} expenses={expenses} onChange={setExpenses} />
         )}
         {tab === "Roteiro" && <Itinerary trip={trip} days={days} onChange={setDays} />}
+        {tab === "Notas" && <Notes value={notes} onChange={setNotes} />}
       </main>
       <nav className="tabbar" aria-label="Seções">
         <div className="tabbar-inner">
