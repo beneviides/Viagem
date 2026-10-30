@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import { usePersistent } from "./store";
+import { useWorkspace } from "./store";
 import { Expense, Hotel, ItineraryDay, PackItem, Trip } from "./types";
 import { cityByCode } from "./lib/cities";
-import { addDays, daysBetween } from "./lib/dates";
+import { daysBetween } from "./lib/dates";
 import { shiftItinerary } from "./lib/itinerary";
 import { dailyProjection, forecast, projected, realized, totals } from "./lib/budget";
 import TripForm from "./components/TripForm";
@@ -12,16 +12,7 @@ import Itinerary from "./components/Itinerary";
 import Pass from "./components/Pass";
 import Notes from "./components/Notes";
 import Packing from "./components/Packing";
-
-const today = new Date().toISOString().slice(0, 10);
-const DEFAULT_TRIP: Trip = {
-  origin: "GRU",
-  destination: "LIS",
-  departDate: addDays(today, 60),
-  returnDate: addDays(today, 67),
-  travelers: 2,
-  budgetTotal: 20000,
-};
+import Trips from "./components/Trips";
 
 const TABS = ["Viagem", "Hotéis", "Gastos", "Roteiro", "Mala", "Notas"] as const;
 type Tab = (typeof TABS)[number];
@@ -56,14 +47,16 @@ const ICONS: Record<Tab, JSX.Element> = {
 };
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>("Viagem");
-  const [trip, setTrip] = usePersistent<Trip>("viagem.trip", DEFAULT_TRIP);
-  const [hotels, setHotels] = usePersistent<Hotel[]>("viagem.hotels", []);
-  const [selectedHotelId, setSelectedHotelId] = usePersistent<string | undefined>("viagem.hotel", undefined);
-  const [expenses, setExpenses] = usePersistent<Expense[]>("viagem.expenses", []);
-  const [days, setDays] = usePersistent<ItineraryDay[]>("viagem.days", []);
-  const [pack, setPack] = usePersistent<PackItem[]>("viagem.pack", []);
-  const [notes, setNotes] = usePersistent<string>("viagem.notes", "");
+  const [tab, setTab] = useState<Tab | "Viagens">("Viagem");
+  const { ws, active, update, select, create, duplicate, remove, importTrips } = useWorkspace();
+  const { trip, hotels, selectedHotelId, expenses, days, pack, notes } = active;
+  const setTrip = (v: Trip) => update({ trip: v });
+  const setHotels = (v: Hotel[]) => update({ hotels: v });
+  const setSelectedHotelId = (v: string | undefined) => update({ selectedHotelId: v });
+  const setExpenses = (v: Expense[]) => update({ expenses: v });
+  const setDays = (v: ItineraryDay[]) => update({ days: v });
+  const setPack = (v: PackItem[]) => update({ pack: v });
+  const setNotes = (v: string) => update({ notes: v });
 
   // Adiar ou adiantar a viagem leva o roteiro junto, em vez de deixar as atividades em dias antigos.
   const changeTrip = (next: Trip) => {
@@ -90,8 +83,27 @@ export default function App() {
 
   return (
     <div className="app">
-      <Pass trip={trip} origin={origin} destination={destination} />
+      <Pass trip={trip} origin={origin} destination={destination} tripCount={ws.trips.length} onOpenTrips={() => setTab("Viagens")} />
       <main>
+        {tab === "Viagens" && (
+          <Trips
+            ws={ws}
+            onOpen={(id) => {
+              select(id);
+              setTab("Viagem");
+            }}
+            onCreate={() => {
+              create();
+              setTab("Viagem");
+            }}
+            onDuplicate={(id) => {
+              duplicate(id);
+              setTab("Viagem");
+            }}
+            onRemove={remove}
+            onImport={importTrips}
+          />
+        )}
         {tab === "Viagem" && <TripForm trip={trip} destination={destination} projection={projection} onChange={changeTrip} />}
         {tab === "Hotéis" && (
           <Hotels

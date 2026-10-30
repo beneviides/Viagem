@@ -1,4 +1,6 @@
 export interface Trip {
+  /** Nome opcional; sem ele a viagem aparece como "GRU → LIS". */
+  name?: string;
   origin: string; // código IATA
   destination: string; // código IATA
   departDate: string; // yyyy-mm-dd
@@ -49,4 +51,21 @@ export interface PackItem {
   packed: boolean;
   /** Presente nos itens sugeridos; permite atualizar o texto sem duplicar. */
   key?: string;
+}
+
+/** Tudo que pertence a uma viagem. */
+export interface TripData {
+  id: string;
+  trip: Trip;
+  hotels: Hotel[];
+  selectedHotelId?: string;
+  expenses: Expense[];
+  days: ItineraryDay[];
+  pack: PackItem[];
+  notes: string;
+}
+
+export interface Workspace {
+  trips: TripData[];
+  activeId: string;
 }

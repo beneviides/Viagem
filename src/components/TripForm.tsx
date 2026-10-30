@@ -64,6 +64,10 @@ export default function TripForm({ trip, destination, projection, onChange }: Pr
       <section className="card">
         <h3>Sua viagem</h3>
         <div className="form">
+          <label style={{ gridColumn: "1 / -1" }}>
+            Nome da viagem (opcional)
+            <input id="trip-name" maxLength={80} placeholder={`${trip.origin} → ${trip.destination}`} value={trip.name ?? ""} onChange={(e) => set("name", e.target.value)} />
+          </label>
           <label>
             Saindo de
             <select value={trip.origin} onChange={(e) => set("origin", e.target.value)}>

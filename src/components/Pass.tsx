@@ -7,11 +7,21 @@ const short = (iso: string) => {
   return `${p.day} ${p.month}`;
 };
 
-export default function Pass({ trip, origin, destination }: { trip: Trip; origin: City; destination: City }) {
+interface Props {
+  trip: Trip;
+  origin: City;
+  destination: City;
+  tripCount: number;
+  onOpenTrips: () => void;
+}
+
+export default function Pass({ trip, origin, destination, tripCount, onOpenTrips }: Props) {
   return (
     <section className="pass" aria-label={`Viagem de ${origin.name} para ${destination.name}`}>
       <div className="pass-top">
-        <span>Cartão de embarque</span>
+        <button type="button" className="pass-link" onClick={onOpenTrips} aria-label={`Minhas viagens (${tripCount})`}>
+          Minhas viagens ({tripCount}) ▾
+        </button>
         <b>{countdownLabel(trip.departDate, trip.returnDate)}</b>
       </div>
       <div className="pass-route">
