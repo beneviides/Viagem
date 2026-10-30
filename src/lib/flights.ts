@@ -48,4 +48,47 @@ export const mockProvider: FlightProvider = {
   },
 };
 
-export const flightProvider: FlightProvider = mockProvider;
+/** Provedor real: consulta o servidor intermediário (server/), que guarda a chave do SerpApi. */
+export const apiProvider: FlightProvider = {
+  async search(origin, destination, departDate, returnDate, flexDays) {
+    const qs = new URLSearchParams({
+      origin: origin.code,
+      destination: destination.code,
+      departDate,
+      returnDate,
+      flex: String(flexDays),
+    });
+    const res = await fetch(`/api/flights?${qs}`);
+    if (!res.ok) throw new Error(res.status === 503 ? "not_configured" : "upstream_failed");
+    const body = (await res.json()) as { offers: FlightOffer[] };
+    return body.offers;
+  },
+};
+
+export interface SearchResult {
+  offers: FlightOffer[];
+  /** true quando os preços vêm do provedor simulado. */
+  simulated: boolean;
+  /** Motivo do fallback para o simulado, se houve. */
+  reason?: "not_configured" | "unavailable" | "no_results";
+}
+
+/** Tenta preços reais; se o servidor não estiver disponível ou configurado, usa o simulado. */
+export async function searchFlights(
+  origin: City,
+  destination: City,
+  departDate: string,
+  returnDate: string,
+  flexDays: number
+): Promise<SearchResult> {
+  try {
+    const offers = await apiProvider.search(origin, destination, departDate, returnDate, flexDays);
+    if (offers.length > 0) return { offers, simulated: false };
+    const sim = await mockProvider.search(origin, destination, departDate, returnDate, flexDays);
+    return { offers: sim, simulated: true, reason: "no_results" };
+  } catch (e) {
+    const sim = await mockProvider.search(origin, destination, departDate, returnDate, flexDays);
+    const reason = e instanceof Error && e.message === "not_configured" ? "not_configured" : "unavailable";
+    return { offers: sim, simulated: true, reason };
+  }
+}

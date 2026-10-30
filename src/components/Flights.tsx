@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { FlightOffer, Trip } from "../types";
 import { cityByCode } from "../lib/cities";
-import { flightProvider } from "../lib/flights";
+import { SearchResult, searchFlights } from "../lib/flights";
 import { brl, fmtDate } from "../lib/dates";
 
 interface Props {
@@ -14,6 +14,7 @@ interface Props {
 export default function Flights({ trip, chosen, onChoose, onChangeTrip }: Props) {
   const [flex, setFlex] = useState(3);
   const [offers, setOffers] = useState<FlightOffer[]>([]);
+  const [source, setSource] = useState<Pick<SearchResult, "simulated" | "reason">>({ simulated: true });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -22,9 +23,10 @@ export default function Flights({ trip, chosen, onChoose, onChangeTrip }: Props)
     if (!o || !d) return;
     let cancelled = false;
     setLoading(true);
-    flightProvider.search(o, d, trip.departDate, trip.returnDate, flex).then((r) => {
+    searchFlights(o, d, trip.departDate, trip.returnDate, flex).then((r) => {
       if (!cancelled) {
-        setOffers(r);
+        setOffers(r.offers);
+        setSource({ simulated: r.simulated, reason: r.reason });
         setLoading(false);
       }
     });
@@ -39,12 +41,20 @@ export default function Flights({ trip, chosen, onChoose, onChangeTrip }: Props)
       <div className="card">
         <label>
           Flexibilidade de datas: ±{flex} dias
-          <input type="range" min={0} max={7} value={flex} onChange={(e) => setFlex(+e.target.value)} />
+          <input type="range" min={0} max={3} value={flex} onChange={(e) => setFlex(+e.target.value)} />
         </label>
-        <p className="muted">
-          ⚠️ Preços simulados para demonstração (por pessoa, ida e volta). Para valores reais, conecte um provedor em{" "}
-          <code>src/lib/flights.ts</code>.
-        </p>
+        {source.simulated ? (
+          <p className="muted">
+            ⚠️ Preços simulados (por pessoa, ida e volta).{" "}
+            {source.reason === "not_configured"
+              ? "Para preços reais do Google Flights, configure SERPAPI_KEY no servidor (veja o README)."
+              : source.reason === "no_results"
+                ? "O Google Flights não retornou voos para esse trecho/datas."
+                : "Servidor de voos indisponível: rode `npm run server`."}
+          </p>
+        ) : (
+          <p className="muted">✅ Preços reais do Google Flights via SerpApi (por pessoa, ida e volta, em R$).</p>
+        )}
       </div>
       {loading && <p>Buscando…</p>}
       {cheapest && (

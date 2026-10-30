@@ -9,8 +9,18 @@ npm test        # testes da lógica
 npm run build
 ```
 
-## Passagens reais
-A busca usa um provedor **simulado** (`src/lib/flights.ts`). Para preços reais, implemente a interface `FlightProvider` com Amadeus, Kiwi/Tequila ou similar e troque `flightProvider`. As chaves de API devem ficar em um backend, nunca no navegador.
+## Passagens reais (SerpApi / Google Flights)
+O Amadeus Self-Service foi desativado em jul/2026, então a busca usa o SerpApi (engine `google_flights`) por um servidor intermediário, para que a chave nunca vá ao navegador.
+
+```
+export SERPAPI_KEY=sua_chave      # https://serpapi.com
+npm run server                    # API em http://localhost:8787
+npm run dev                       # em outro terminal; /api é encaminhado ao servidor
+```
+
+- Sem `SERPAPI_KEY` ou com o servidor parado, o app usa preços **simulados** e avisa na tela.
+- Cada dia da janela flexível é **1 busca** do seu plano SerpApi (flexibilidade máxima ±3 = 7 buscas). Resultados ficam em cache por 1 hora no servidor.
+- Em produção, hospede `server/` junto do front-end (ou atrás do mesmo domínio em `/api`).
 
 ## Próximos passos
 - Provedor real de voos e de hotéis (API + backend)
