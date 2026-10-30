@@ -1,0 +1,50 @@
+import { City } from "../lib/cities";
+import { Trip } from "../types";
+import { fmtParts, nightsBetween } from "../lib/dates";
+
+const short = (iso: string) => {
+  const p = fmtParts(iso);
+  return `${p.day} ${p.month}`;
+};
+
+export default function Pass({ trip, origin, destination }: { trip: Trip; origin: City; destination: City }) {
+  return (
+    <section className="pass" aria-label={`Viagem de ${origin.name} para ${destination.name}`}>
+      <div className="pass-route">
+        <div className="leg">
+          <span className="code">{origin.code}</span>
+          <span className="city">{origin.name}</span>
+        </div>
+        <div className="route-line" aria-hidden="true">
+          <i />
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" />
+          </svg>
+          <i />
+        </div>
+        <div className="leg end">
+          <span className="code">{destination.code}</span>
+          <span className="city">{destination.name}</span>
+        </div>
+      </div>
+      <dl className="pass-stub">
+        <div>
+          <dt>Ida</dt>
+          <dd>{short(trip.departDate)}</dd>
+        </div>
+        <div>
+          <dt>Volta</dt>
+          <dd>{short(trip.returnDate)}</dd>
+        </div>
+        <div>
+          <dt>Noites</dt>
+          <dd>{nightsBetween(trip.departDate, trip.returnDate)}</dd>
+        </div>
+        <div>
+          <dt>Viajantes</dt>
+          <dd>{trip.travelers}</dd>
+        </div>
+      </dl>
+    </section>
+  );
+}

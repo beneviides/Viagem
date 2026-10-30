@@ -8,6 +8,7 @@ import TripForm from "./components/TripForm";
 import Hotels from "./components/Hotels";
 import Budget from "./components/Budget";
 import Itinerary from "./components/Itinerary";
+import Pass from "./components/Pass";
 
 const today = new Date().toISOString().slice(0, 10);
 const DEFAULT_TRIP: Trip = {
@@ -68,12 +69,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <header>
-        <h1>✈️ Viagem</h1>
-        <p>
-          {origin.name} → {destination.name} · {trip.travelers} pessoa(s)
-        </p>
-      </header>
+      <Pass trip={trip} origin={origin} destination={destination} />
       <main>
         {tab === "Viagem" && <TripForm trip={trip} destination={destination} projection={projection} onChange={setTrip} />}
         {tab === "Hotéis" && (

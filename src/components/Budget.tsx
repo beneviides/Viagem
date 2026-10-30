@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Category, Expense, Trip } from "../types";
 import { DayProjection, Forecast, summarizeProjection } from "../lib/budget";
 import { City } from "../lib/cities";
-import { brl, fmtDate } from "../lib/dates";
+import { brl, fmtParts } from "../lib/dates";
 import { uid } from "../store";
 
 const LABELS: Record<Category, string> = {
@@ -13,6 +13,9 @@ const LABELS: Record<Category, string> = {
   passeios: "Passeios",
   outros: "Outros",
 };
+const ORDER = Object.keys(LABELS) as Category[];
+// Cada categoria mantém sempre a mesma cor (slots categóricos, na ordem).
+const COLOR: Record<Category, string> = { voo: "var(--s1)", hotel: "var(--s2)", comida: "var(--s3)", transporte: "var(--s4)", passeios: "var(--s5)", outros: "var(--s6)" };
 
 interface Props {
   trip: Trip;
@@ -28,9 +31,11 @@ export default function Budget({ trip, destination, projection, summary, expense
   const [label, setLabel] = useState("");
   const [amount, setAmount] = useState("");
 
-  const { perPersonDay, hotelShare: roomShare, avgDay } = summarizeProjection(destination, projection, trip.travelers);
+  const { perPersonDay, avgDay } = summarizeProjection(destination, projection, trip.travelers);
   const diff = trip.budgetTotal - summary.total;
   const pct = trip.budgetTotal > 0 ? Math.min(100, (summary.total / trip.budgetTotal) * 100) : 0;
+  const maxDay = Math.max(1, ...projection.map((d) => d.total));
+  const parts = ORDER.filter((c) => summary[c] > 0);
 
   const add = () => {
     const a = parseFloat(amount);
@@ -41,87 +46,128 @@ export default function Budget({ trip, destination, projection, summary, expense
   };
 
   return (
-    <section>
-      <div className="card">
-        <h2>Previsão: {brl(summary.total)}</h2>
-        <div className="bar">
-          <div className={diff < 0 ? "fill over" : "fill"} style={{ width: `${pct}%` }} />
+    <>
+      <section className="card">
+        <div className="stat-label">Previsão total</div>
+        <div className="stat">{brl(summary.total)}</div>
+        <div className={`meter${diff < 0 ? " over" : ""}`} role="img" aria-label={`${Math.round(pct)}% do orçamento`}>
+          <div style={{ width: `${pct}%` }} />
         </div>
         <p className={diff < 0 ? "over-text" : "muted"}>
           {diff >= 0 ? `Sobram ${brl(diff)} do orçamento de ${brl(trip.budgetTotal)}` : `Estoura o orçamento em ${brl(-diff)}`}
           {" · "}
           {brl(summary.total / trip.travelers)} por pessoa
         </p>
-        <table>
-          <tbody>
-            {(Object.keys(LABELS) as Category[]).map((c) => (
-              <tr key={c}>
-                <td>{LABELS[c]}</td>
-                <td className="right">{brl(summary[c])}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="muted">
-          A hospedagem usa o hotel escolhido (ou a média do destino). Lance o valor das passagens abaixo, na categoria Passagens.
-        </p>
-      </div>
-      <div className="card">
-        <h3>Projeção diária em {destination.name}</h3>
-        <p>
-          <strong>{brl(perPersonDay)}</strong> por pessoa/dia <span className="muted">(sem passagem; com hospedagem dividida por quarto)</span>
-        </p>
-        <p className="muted">
-          Alimentação {brl(destination.daily.comida)} · Transporte {brl(destination.daily.transporte)} · Passeios{" "}
-          {brl(destination.daily.passeios)} · Hotel {brl(roomShare)}
-        </p>
-        <p>
-          Grupo de {trip.travelers}: <strong>{brl(avgDay)}</strong> por dia em média ao longo de {projection.length} dias.
-        </p>
-        <table>
-          <tbody>
-            {projection.map((d, i) => (
-              <tr key={d.date}>
-                <td>
-                  Dia {i + 1} · {fmtDate(d.date)}
-                </td>
-                <td className="right">{brl(d.total)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="muted">Dias com atividades no Roteiro usam o custo planejado; os demais, a estimativa do destino.</p>
-      </div>
-      <div className="card">
-        <h3>Lançar gasto extra</h3>
-        <div className="form">
-          <select value={category} onChange={(e) => setCategory(e.target.value as Category)}>
-            {(Object.keys(LABELS) as Category[]).map((c) => (
-              <option key={c} value={c}>
-                {LABELS[c]}
-              </option>
-            ))}
-          </select>
-          <input placeholder="Descrição" value={label} onChange={(e) => setLabel(e.target.value)} />
-          <input placeholder="Valor (R$)" type="number" min={0} value={amount} onChange={(e) => setAmount(e.target.value)} />
-          <button onClick={add}>Adicionar</button>
-        </div>
-        <ul className="list">
-          {expenses.map((e) => (
-            <li key={e.id}>
-              <div>
-                {e.label} <span className="muted">({LABELS[e.category]})</span>
-              </div>
-              <div className="right">
-                {brl(e.amount)}
-                <button className="ghost" onClick={() => onChange(expenses.filter((x) => x.id !== e.id))}>
-                  ✕
-                </button>
-              </div>
-            </li>
+        <div className="seg" role="img" aria-label="Gastos por categoria">
+          {parts.map((c) => (
+            <span key={c} title={`${LABELS[c]}: ${brl(summary[c])}`} style={{ flexGrow: summary[c], background: COLOR[c] }} />
           ))}
+        </div>
+        <table className="breakdown">
+          <tbody>
+            {ORDER.map((c) => (
+              <tr key={c}>
+                <td>
+                  <span className="name">
+                    <span className="sw" style={{ background: COLOR[c] }} />
+                    {LABELS[c]}
+                  </span>
+                </td>
+                <td className="pct">{summary.total > 0 ? Math.round((summary[c] / summary.total) * 100) : 0}%</td>
+                <td>{brl(summary[c])}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="muted" style={{ marginTop: 10 }}>
+          A hospedagem usa o hotel escolhido (ou a média do destino). Lance as passagens em &quot;Lançar gasto&quot;.
+        </p>
+      </section>
+
+      <section className="card">
+        <div className="stat-label">Projeção diária em {destination.name}</div>
+        <div className="stat">
+          {brl(perPersonDay)}
+          <small>por pessoa/dia</small>
+        </div>
+        <div className="chips">
+          <span className="chip">
+            Alimentação <b>{brl(destination.daily.comida)}</b>
+          </span>
+          <span className="chip">
+            Transporte <b>{brl(destination.daily.transporte)}</b>
+          </span>
+          <span className="chip">
+            Passeios <b>{brl(destination.daily.passeios)}</b>
+          </span>
+        </div>
+        <p style={{ marginTop: 12 }}>
+          Grupo de {trip.travelers}: <b className="num">{brl(avgDay)}</b> por dia em média.
+        </p>
+        <ul className="days">
+          {projection.map((d, i) => {
+            const p = fmtParts(d.date);
+            return (
+              <li key={d.date}>
+                <span className="d">
+                  Dia {i + 1} · {p.day}/{p.month}
+                </span>
+                <span className="bar">
+                  <i style={{ width: `${(d.total / maxDay) * 100}%` }} />
+                </span>
+                <b>{brl(d.total)}</b>
+              </li>
+            );
+          })}
         </ul>
-      </div>
-    </section>
+        <p className="muted" style={{ marginTop: 10 }}>
+          Dias com atividades no Roteiro usam o custo planejado; os demais, a estimativa do destino.
+        </p>
+      </section>
+
+      <section className="card">
+        <h3>Lançar gasto</h3>
+        <div className="form">
+          <label>
+            Categoria
+            <select id="exp-cat" value={category} onChange={(e) => setCategory(e.target.value as Category)}>
+              {ORDER.map((c) => (
+                <option key={c} value={c}>
+                  {LABELS[c]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Descrição
+            <input id="exp-label" value={label} onChange={(e) => setLabel(e.target.value)} />
+          </label>
+          <label>
+            Valor (R$)
+            <input id="exp-amount" type="number" min={0} value={amount} onChange={(e) => setAmount(e.target.value)} />
+          </label>
+        </div>
+        <button style={{ marginTop: 12, width: "100%" }} onClick={add}>
+          Adicionar
+        </button>
+        {expenses.length > 0 && (
+          <div style={{ marginTop: 8 }}>
+            {expenses.map((e) => (
+              <div className="row" key={e.id}>
+                <span>
+                  {e.label} <span className="muted">· {LABELS[e.category]}</span>
+                </span>
+                <span>
+                  <b>{brl(e.amount)}</b>
+                  <button className="ghost" aria-label={`Remover ${e.label}`} onClick={() => onChange(expenses.filter((x) => x.id !== e.id))}>
+                    ✕
+                  </button>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </>
   );
 }

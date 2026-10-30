@@ -21,3 +21,12 @@ export const fmtDate = (iso: string): string =>
 
 export const brl = (n: number): string =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+
+export const fmtParts = (iso: string) => {
+  const d = new Date(iso + "T12:00:00");
+  return {
+    day: d.toLocaleDateString("pt-BR", { day: "2-digit" }),
+    month: d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", ""),
+    weekday: d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""),
+  };
+};
