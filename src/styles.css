@@ -80,21 +80,31 @@ button.ghost { background:transparent; color:var(--muted); min-width:44px; paddi
 .meter { height:8px; border-radius:999px; background:var(--line); overflow:hidden; margin:12px 0 8px; }
 .meter > div { height:100%; border-radius:999px; background:var(--ok); }
 .meter.over > div { background:var(--bad); }
+.meter.real { height:6px; margin:6px 0; }
+.meter.real > div { background:var(--accent); }
+.seg-toggle { display:flex; gap:4px; padding:4px; margin-bottom:12px; border-radius:12px; background:var(--bg); }
+.seg-toggle button { flex:1; min-height:38px; background:transparent; color:var(--muted); font:500 14px var(--body); }
+.seg-toggle button.on { background:var(--surface); color:var(--ink); font-weight:600; box-shadow:0 0 0 1px var(--line); }
 .over-text { color:var(--bad); font-weight:600; }
 
 .seg { display:flex; gap:2px; height:28px; margin-top:16px; }
 .seg > span { min-width:3px; border-radius:4px; }
 .breakdown { width:100%; border-collapse:collapse; margin-top:12px; font-variant-numeric:tabular-nums; }
+.breakdown th { padding:0 0 6px; font:600 11px var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); text-align:right; }
+.breakdown th:first-child { text-align:left; }
 .breakdown td { padding:9px 0; border-top:1px solid var(--line); }
 .breakdown .name { display:flex; align-items:center; gap:10px; }
 .breakdown td + td { text-align:right; }
-.breakdown td.pct { color:var(--muted); width:52px; }
+.breakdown td.pct, .breakdown th.pct { color:var(--muted); width:92px; }
 .sw { width:12px; height:12px; border-radius:3px; flex:none; }
 
 .days { list-style:none; margin:12px 0 0; padding:0; display:grid; gap:6px; }
 .days li { display:grid; grid-template-columns:76px 1fr auto; align-items:center; gap:10px; font-variant-numeric:tabular-nums; }
-.days .bar { height:10px; border-radius:999px; background:var(--line); overflow:hidden; }
+.days .bar { position:relative; height:10px; border-radius:999px; background:var(--line); overflow:hidden; }
 .days .bar > i { display:block; height:100%; background:var(--brand); border-radius:999px; }
+.days .bar > i.real { position:absolute; left:0; top:0; background:var(--accent); height:100%; opacity:.9; }
+.days .amt { display:flex; flex-direction:column; align-items:flex-end; line-height:1.2; }
+.days .amt small { font-size:11px; color:var(--accent); font-weight:600; }
 .days .d { font-size:13px; color:var(--muted); }
 
 /* ---------- toques de personalidade ---------- */

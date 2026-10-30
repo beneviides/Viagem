@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Category, Expense, Trip } from "../types";
-import { DayProjection, Forecast, summarizeProjection } from "../lib/budget";
+import { DayProjection, Totals, summarizeProjection } from "../lib/budget";
 import { City } from "../lib/cities";
 import { brl, fmtParts } from "../lib/dates";
 import { uid } from "../store";
@@ -21,26 +21,32 @@ interface Props {
   trip: Trip;
   destination: City;
   projection: DayProjection[];
-  summary: Forecast & { total: number };
+  /** Projeção final: o maior entre previsto e real, por categoria. */
+  summary: Totals;
+  expected: Totals;
+  real: Totals;
   expenses: Expense[];
   onChange: (e: Expense[]) => void;
 }
 
-export default function Budget({ trip, destination, projection, summary, expenses, onChange }: Props) {
+export default function Budget({ trip, destination, projection, summary, expected, real, expenses, onChange }: Props) {
   const [category, setCategory] = useState<Category>("voo");
+  const [kind, setKind] = useState<"real" | "planned">("real");
+  const [date, setDate] = useState("");
   const [label, setLabel] = useState("");
   const [amount, setAmount] = useState("");
 
   const { perPersonDay, avgDay } = summarizeProjection(destination, projection, trip.travelers);
   const diff = trip.budgetTotal - summary.total;
   const pct = trip.budgetTotal > 0 ? Math.min(100, (summary.total / trip.budgetTotal) * 100) : 0;
-  const maxDay = Math.max(1, ...projection.map((d) => d.total));
+  const maxDay = Math.max(1, ...projection.map((d) => Math.max(d.total, d.real)));
+  const realPct = summary.total > 0 ? Math.min(100, (real.total / summary.total) * 100) : 0;
   const parts = ORDER.filter((c) => summary[c] > 0);
 
   const add = () => {
     const a = parseFloat(amount);
     if (!label.trim() || !(a > 0)) return;
-    onChange([...expenses, { id: uid(), category, label: label.trim(), amount: a }]);
+    onChange([...expenses, { id: uid(), category, label: label.trim(), amount: a, ...(kind === "real" ? { spent: true, date: date || undefined } : {}) }]);
     setLabel("");
     setAmount("");
   };
@@ -53,6 +59,17 @@ export default function Budget({ trip, destination, projection, summary, expense
         <div className={`meter${diff < 0 ? " over" : ""}`} role="img" aria-label={`${Math.round(pct)}% do orçamento`}>
           <div style={{ width: `${pct}%` }} />
         </div>
+        {real.total > 0 && (
+          <>
+            <div className="meter real" role="img" aria-label={`${Math.round(realPct)}% da previsão já gasta`}>
+              <div style={{ width: `${realPct}%` }} />
+            </div>
+            <p className="muted">
+              Já gasto: <b className="num">{brl(real.total)}</b> ({Math.round(realPct)}% da previsão) · falta gastar cerca de{" "}
+              <b className="num">{brl(Math.max(0, summary.total - real.total))}</b>
+            </p>
+          </>
+        )}
         <p className={diff < 0 ? "over-text" : "muted"}>
           {diff >= 0 ? `Sobram ${brl(diff)} do orçamento de ${brl(trip.budgetTotal)}` : `Estoura o orçamento em ${brl(-diff)}`}
           {" · "}
@@ -73,6 +90,15 @@ export default function Budget({ trip, destination, projection, summary, expense
           ))}
         </div>
         <table className="breakdown">
+          <thead>
+            <tr>
+              <th scope="col">Categoria</th>
+              <th scope="col" className="pct">
+                Real
+              </th>
+              <th scope="col">Previsão</th>
+            </tr>
+          </thead>
           <tbody>
             {ORDER.map((c) => (
               <tr key={c}>
@@ -82,14 +108,14 @@ export default function Budget({ trip, destination, projection, summary, expense
                     {LABELS[c]}
                   </span>
                 </td>
-                <td className="pct">{summary.total > 0 ? Math.round((summary[c] / summary.total) * 100) : 0}%</td>
+                <td className="pct">{real[c] > 0 ? brl(real[c]) : "—"}</td>
                 <td>{brl(summary[c])}</td>
               </tr>
             ))}
           </tbody>
         </table>
         <p className="muted" style={{ marginTop: 10 }}>
-          A hospedagem usa o hotel escolhido (ou a média do destino). Lance as passagens em &quot;Lançar gasto&quot;.
+          A previsão de cada categoria é o maior valor entre o estimado e o que você já gastou. A hospedagem usa o hotel escolhido (ou a média do destino).
         </p>
       </section>
 
@@ -123,19 +149,31 @@ export default function Budget({ trip, destination, projection, summary, expense
                 </span>
                 <span className="bar">
                   <i style={{ width: `${(d.total / maxDay) * 100}%` }} />
+                  {d.real > 0 && <i className="real" style={{ width: `${(d.real / maxDay) * 100}%` }} />}
                 </span>
-                <b>{brl(d.total)}</b>
+                <span className="amt">
+                  <b>{brl(d.total)}</b>
+                  {d.real > 0 && <small>real {brl(d.real)}</small>}
+                </span>
               </li>
             );
           })}
         </ul>
         <p className="muted" style={{ marginTop: 10 }}>
-          Dias com atividades no Roteiro usam o custo planejado; os demais, a estimativa do destino.
+          Barra azul: previsto. Barra laranja: gasto real do dia. Dias com atividades no Roteiro usam o custo planejado; os demais, a estimativa do destino.
         </p>
       </section>
 
       <section className="card">
         <h3>Lançar gasto</h3>
+        <div className="seg-toggle" role="radiogroup" aria-label="Tipo de lançamento">
+          <button type="button" role="radio" aria-checked={kind === "real"} className={kind === "real" ? "on" : ""} onClick={() => setKind("real")}>
+            Gasto real
+          </button>
+          <button type="button" role="radio" aria-checked={kind === "planned"} className={kind === "planned" ? "on" : ""} onClick={() => setKind("planned")}>
+            Planejado
+          </button>
+        </div>
         <div className="form">
           <label>
             Categoria
@@ -151,6 +189,19 @@ export default function Budget({ trip, destination, projection, summary, expense
             Descrição
             <input id="exp-label" value={label} onChange={(e) => setLabel(e.target.value)} />
           </label>
+          {kind === "real" && (
+            <label>
+              Dia
+              <select id="exp-date" value={date} onChange={(e) => setDate(e.target.value)}>
+                <option value="">Sem data</option>
+                {projection.map((d, i) => (
+                  <option key={d.date} value={d.date}>
+                    Dia {i + 1} · {fmtParts(d.date).day}/{fmtParts(d.date).month}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <label>
             Valor (R$)
             <input id="exp-amount" type="number" min={0} value={amount} onChange={(e) => setAmount(e.target.value)} />
@@ -164,7 +215,10 @@ export default function Budget({ trip, destination, projection, summary, expense
             {expenses.map((e) => (
               <div className="row" key={e.id}>
                 <span>
-                  {e.label} <span className="muted">· {LABELS[e.category]}</span>
+                  {e.label}{" "}
+                  <span className="muted">
+                    · {LABELS[e.category]} · {e.spent ? `real${e.date ? ` ${fmtParts(e.date).day}/${fmtParts(e.date).month}` : ""}` : "planejado"}
+                  </span>
                 </span>
                 <span>
                   <b>{brl(e.amount)}</b>

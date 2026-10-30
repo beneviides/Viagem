@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { cityByCode } from "./cities";
-import { dailyProjection, forecast, totals } from "./budget";
+import { dailyProjection, forecast, projected, realized, totals } from "./budget";
 import { countdownLabel, daysBetween } from "./dates";
 import { outsideRange, shiftItinerary } from "./itinerary";
 import { climateFor, suggestItems, syncSuggestions } from "./packing";
@@ -120,5 +120,28 @@ describe("datas e roteiro", () => {
       { date: "2027-03-30", activities: act },
     ];
     expect(outsideRange(d, "2027-03-10", "2027-03-17").map((x) => x.date)).toEqual(["2027-03-09", "2027-03-30"]);
+  });
+});
+
+describe("previsto x real", () => {
+  const base = forecast({ destination: lis, departDate: "2027-03-10", returnDate: "2027-03-12", travelers: 2, hotels: [] });
+  const ex = (o: object) => ({ id: "x", category: "voo", label: "L", amount: 100, ...o }) as never;
+
+  it("gasto real não soma ao previsto; planejado soma", () => {
+    expect(totals(base, [ex({ spent: true })]).voo).toBe(0);
+    expect(totals(base, [ex({ spent: false })]).voo).toBe(100);
+    expect(totals(base, [ex({})]).voo).toBe(100); // dados antigos sem o campo
+    expect(realized([ex({ spent: true }), ex({ spent: false })]).voo).toBe(100);
+  });
+  it("projeção usa o maior entre previsto e real por categoria", () => {
+    const exp = totals(base, []);
+    const p = projected(exp, realized([ex({ spent: true, category: "voo", amount: 7800 }), ex({ spent: true, category: "comida", amount: 50 })]));
+    expect(p.voo).toBe(7800); // sem previsão: vale o real
+    expect(p.comida).toBe(exp.comida); // gastou menos que o previsto: ainda falta gastar
+    expect(p.total).toBe(exp.total + 7800); // previsto não tinha passagem; o resto não muda
+  });
+  it("soma o real por dia na projeção diária", () => {
+    const p = dailyProjection({ destination: lis, departDate: "2027-03-10", returnDate: "2027-03-12", travelers: 2, hotels: [], itinerary: [], expenses: [ex({ spent: true, date: "2027-03-11", amount: 80 }), ex({ spent: true, date: "2027-03-11", amount: 20 })] });
+    expect(p.map((d) => d.real)).toEqual([0, 100, 0]);
   });
 });

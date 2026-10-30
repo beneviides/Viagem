@@ -20,6 +20,10 @@ export interface Expense {
   category: Category;
   label: string;
   amount: number;
+  /** true = gasto real já feito; ausente/false = valor planejado (compatível com dados antigos). */
+  spent?: boolean;
+  /** Dia do gasto real (yyyy-mm-dd), opcional. */
+  date?: string;
 }
 
 export type Category = "voo" | "hotel" | "comida" | "transporte" | "passeios" | "outros";

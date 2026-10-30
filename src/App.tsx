@@ -4,7 +4,7 @@ import { Expense, Hotel, ItineraryDay, PackItem, Trip } from "./types";
 import { cityByCode } from "./lib/cities";
 import { addDays, daysBetween } from "./lib/dates";
 import { shiftItinerary } from "./lib/itinerary";
-import { dailyProjection, forecast, totals } from "./lib/budget";
+import { dailyProjection, forecast, projected, realized, totals } from "./lib/budget";
 import TripForm from "./components/TripForm";
 import Hotels from "./components/Hotels";
 import Budget from "./components/Budget";
@@ -75,16 +75,18 @@ export default function App() {
   const destination = cityByCode(trip.destination);
   const origin = cityByCode(trip.origin);
 
-  const { summary, projection } = useMemo(() => {
-    if (!destination) return { summary: undefined, projection: [] };
-    const projection = dailyProjection({ ...trip, destination, hotels, selectedHotelId, itinerary: days });
+  const { summary, expected, real, projection } = useMemo(() => {
+    if (!destination) return { summary: undefined, expected: undefined, real: undefined, projection: [] };
+    const projection = dailyProjection({ ...trip, destination, hotels, selectedHotelId, itinerary: days, expenses });
     const base = forecast({ ...trip, destination, hotels, selectedHotelId });
     // Passeios: atividades planejadas no dia, ou a estimativa do destino nos dias sem roteiro.
     base.passeios = projection.reduce((s, d) => s + d.passeios, 0);
-    return { summary: totals(base, expenses), projection };
+    const expected = totals(base, expenses);
+    const real = realized(expenses);
+    return { summary: projected(expected, real), expected, real, projection };
   }, [destination, trip, hotels, selectedHotelId, expenses, days]);
 
-  if (!destination || !origin || !summary) return <p>Cidade inválida.</p>;
+  if (!destination || !origin || !summary || !expected || !real) return <p>Cidade inválida.</p>;
 
   return (
     <div className="app">
@@ -102,7 +104,7 @@ export default function App() {
           />
         )}
         {tab === "Gastos" && (
-          <Budget trip={trip} destination={destination} summary={summary} projection={projection} expenses={expenses} onChange={setExpenses} />
+          <Budget trip={trip} destination={destination} summary={summary} expected={expected} real={real} projection={projection} expenses={expenses} onChange={setExpenses} />
         )}
         {tab === "Roteiro" && <Itinerary trip={trip} days={days} onChange={setDays} />}
         {tab === "Mala" && <Packing trip={trip} origin={origin} destination={destination} items={pack} onChange={setPack} />}
