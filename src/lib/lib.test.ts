@@ -191,5 +191,42 @@ describe("saídas e aeroportos", () => {
   it("o rótulo identifica o aeroporto quando a cidade tem vários", () => {
     expect(cityLabel(cityByCode("CGH")!)).toBe("São Paulo · Congonhas (CGH)");
     expect(cityLabel(cityByCode("BSB")!)).toBe("Brasília (BSB)");
+    expect(cityByCode("AJU")?.name).toBe("Aracaju");
   });
 });
+
+describe("viagens com múltiplos destinos (multi-trechos)", () => {
+  it("resolve trechos sequenciais com transporte de ônibus e avião", async () => {
+    const { getResolvedLegs, getCityForDate } = await import("./legs");
+    const trip = {
+      origin: "GRU",
+      destination: "AJU",
+      departDate: "2027-01-10",
+      returnDate: "2027-01-25", // 15 noites
+      travelers: 1,
+      budgetTotal: 5000,
+      legs: [
+        { id: "1", destination: "AJU", nights: 7, transport: "onibus" as const, transportCost: 150 },
+        { id: "2", destination: "SSA", nights: 8, transport: "aviao" as const, transportCost: 350 },
+      ],
+    };
+    const legs = getResolvedLegs(trip);
+    expect(legs).toHaveLength(2);
+    expect(legs[0].destinationCode).toBe("AJU");
+    expect(legs[0].nights).toBe(7);
+    expect(legs[0].transport).toBe("onibus");
+    expect(legs[0].startDate).toBe("2027-01-10");
+    expect(legs[0].endDate).toBe("2027-01-17");
+
+    expect(legs[1].destinationCode).toBe("SSA");
+    expect(legs[1].nights).toBe(8);
+    expect(legs[1].transport).toBe("aviao");
+    expect(legs[1].startDate).toBe("2027-01-17");
+    expect(legs[1].endDate).toBe("2027-01-25");
+
+    // Verifica que o dia 2027-01-12 está em Aracaju e 2027-01-20 está em Salvador
+    expect(getCityForDate(trip, "2027-01-12").name).toBe("Aracaju");
+    expect(getCityForDate(trip, "2027-01-20").name).toBe("Salvador");
+  });
+});
+

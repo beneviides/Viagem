@@ -57,6 +57,7 @@ CITIES.push(
   mk("NAT", "Natal", "Brasil", -5.9, -35.25, 90, 30, 70, 300, "Natal é cercada de dunas. O passeio de buggy até Genipabu é clássico."),
   mk("MCZ", "Maceió", "Brasil", -9.51, -35.79, 90, 30, 70, 310, "Maceió tem piscinas naturais de água transparente. Consulte a tábua de marés antes de ir."),
   mk("JPA", "João Pessoa", "Brasil", -7.15, -34.95, 85, 30, 60, 280, "João Pessoa abriga a Ponta do Seixas, ponto mais oriental das Américas."),
+  mk("AJU", "Aracaju", "Brasil", -10.98, -37.07, 85, 25, 60, 280, "A orla de Atalaia em Aracaju é uma das mais estruturadas do Brasil, com a Passarela do Caranguejo, lagos e águas mornas."),
   mk("SLZ", "São Luís", "Brasil", -2.58, -44.24, 85, 30, 60, 270, "O centro histórico de São Luís é patrimônio da humanidade e tem azulejos por toda parte."),
   mk("BEL", "Belém", "Brasil", -1.38, -48.48, 85, 30, 60, 280, "Em Belém, experimente o tacacá no fim da tarde e o açaí tradicional, com peixe e farinha."),
   mk("MAO", "Manaus", "Brasil", -3.04, -60.05, 95, 35, 120, 330, "Manaus fica perto do Encontro das Águas, onde os rios Negro e Solimões correm lado a lado."),

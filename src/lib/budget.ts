@@ -1,6 +1,7 @@
 import { City } from "./cities";
-import { Category, Expense, Hotel, ItineraryDay } from "../types";
+import { Category, Expense, Hotel, ItineraryDay, Trip } from "../types";
 import { addDays, nightsBetween } from "./dates";
+import { getCityForDate, getResolvedLegs } from "./legs";
 
 export type Forecast = Record<Category, number>;
 
@@ -13,15 +14,50 @@ export function forecast(opts: {
   hotels: Hotel[];
   selectedHotelId?: string;
   roomsNeeded?: number;
+  trip?: Trip;
 }): Forecast {
   const { destination, travelers } = opts;
   const nights = nightsBetween(opts.departDate, opts.returnDate);
   const days = nights + 1;
-  const hotel = opts.hotels.find((h) => h.id === opts.selectedHotelId);
-  const perNight = hotel?.pricePerNight ?? destination.hotelAvg;
   const rooms = opts.roomsNeeded ?? Math.ceil(travelers / 2);
+
+  // Se a viagem possui múltiplos trechos com cidades distintas:
+  if (opts.trip && opts.trip.legs && opts.trip.legs.length > 1) {
+    const legs = getResolvedLegs(opts.trip);
+    let comida = 0;
+    let transporte = 0;
+    let passeios = 0;
+    let hotel = 0;
+    let passagens = 0;
+
+    for (const leg of legs) {
+      const city = leg.destinationCity;
+      comida += city.daily.comida * leg.nights * travelers;
+      transporte += city.daily.transporte * leg.nights * travelers;
+      passeios += city.daily.passeios * leg.nights * travelers;
+      
+      const cityHotel = opts.hotels.find((h) => h.destinationCode === leg.destinationCode)
+        ?? (opts.selectedHotelId ? opts.hotels.find((h) => h.id === opts.selectedHotelId) : undefined);
+      const perNight = cityHotel?.pricePerNight ?? city.hotelAvg;
+      hotel += perNight * leg.nights * rooms;
+      passagens += (leg.transportCost || 0) * travelers;
+    }
+
+    return {
+      voo: passagens,
+      hotel,
+      comida,
+      transporte,
+      passeios,
+      outros: 0,
+    };
+  }
+
+  // Comportamento clássico de destino único
+  const hotelItem = opts.hotels.find((h) => h.id === opts.selectedHotelId);
+  const perNight = hotelItem?.pricePerNight ?? destination.hotelAvg;
   return {
-    voo: 0, // passagens são lançadas manualmente em Gastos
+    voo: 0, // passagens são lançadas manualmente ou pelos trechos
     hotel: perNight * nights * rooms,
     comida: destination.daily.comida * days * travelers,
     transporte: destination.daily.transporte * days * travelers,
@@ -66,6 +102,7 @@ export function projected(expected: Forecast, real: Forecast): Totals {
 
 export interface DayProjection {
   date: string;
+  city?: City;
   comida: number;
   transporte: number;
   passeios: number;
@@ -89,20 +126,39 @@ export function dailyProjection(opts: {
   selectedHotelId?: string;
   itinerary: ItineraryDay[];
   expenses?: Expense[];
+  trip?: Trip;
 }): DayProjection[] {
   const { destination, travelers } = opts;
   const nights = nightsBetween(opts.departDate, opts.returnDate);
-  const perNight = opts.hotels.find((h) => h.id === opts.selectedHotelId)?.pricePerNight ?? destination.hotelAvg;
   const rooms = Math.ceil(travelers / 2);
+
   return Array.from({ length: nights + 1 }, (_, i) => {
     const date = addDays(opts.departDate, i);
+    // Identifica qual cidade o viajante está neste dia específico
+    const dayCity = opts.trip ? getCityForDate(opts.trip, date) : destination;
+    
+    // Procura hotel da cidade ou selecionado
+    const cityHotel = opts.hotels.find((h) => h.destinationCode === dayCity.code)
+      ?? opts.hotels.find((h) => h.id === opts.selectedHotelId);
+    const perNight = cityHotel?.pricePerNight ?? dayCity.hotelAvg;
+
     const planned = (opts.itinerary.find((d) => d.date === date)?.activities ?? []).reduce((s, a) => s + a.cost, 0);
-    const comida = destination.daily.comida * travelers;
-    const transporte = destination.daily.transporte * travelers;
-    const passeios = planned > 0 ? planned * travelers : destination.daily.passeios * travelers;
+    const comida = dayCity.daily.comida * travelers;
+    const transporte = dayCity.daily.transporte * travelers;
+    const passeios = planned > 0 ? planned * travelers : dayCity.daily.passeios * travelers;
     const hotel = i < nights ? perNight * rooms : 0;
     const real = (opts.expenses ?? []).filter((e) => e.spent && e.date === date).reduce((s, e) => s + e.amount, 0);
-    return { date, comida, transporte, passeios, hotel, total: comida + transporte + passeios + hotel, real };
+
+    return {
+      date,
+      city: dayCity,
+      comida,
+      transporte,
+      passeios,
+      hotel,
+      total: comida + transporte + passeios + hotel,
+      real,
+    };
   });
 }
 

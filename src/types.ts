@@ -1,12 +1,26 @@
+export type TransportType = "aviao" | "onibus" | "carro" | "trem" | "barco";
+
+export interface TripLeg {
+  id: string;
+  origin?: string; // código IATA (opcional, assume anterior)
+  destination: string; // código IATA do destino da parada
+  nights: number; // duração em noites nesta cidade
+  transport: TransportType; // meio de transporte para chegar nesta parada
+  transportCost?: number; // custo da passagem/deslocamento
+  notes?: string;
+}
+
 export interface Trip {
-  /** Nome opcional; sem ele a viagem aparece como "GRU → LIS". */
+  /** Nome opcional; sem ele a viagem aparece como "GRU → LIS" ou com a rota completa. */
   name?: string;
   origin: string; // código IATA
-  destination: string; // código IATA
+  destination: string; // código IATA (1º destino / principal)
   departDate: string; // yyyy-mm-dd
   returnDate: string;
   travelers: number;
   budgetTotal: number; // orçamento total em BRL
+  transport?: TransportType; // meio de transporte inicial/padrão
+  legs?: TripLeg[]; // lista de paradas / múltiplos destinos
 }
 
 export interface Hotel {
@@ -15,6 +29,7 @@ export interface Hotel {
   pricePerNight: number;
   rating?: number;
   link?: string;
+  destinationCode?: string; // cidade opcional para roteiros multi-destino
 }
 
 export interface Expense {

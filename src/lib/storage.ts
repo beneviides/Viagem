@@ -1,7 +1,7 @@
 import { CITIES } from "./cities";
 import { addDays } from "./dates";
 import { PACK_CATEGORIES } from "./packing";
-import { Activity, Category, Expense, Hotel, ItineraryDay, PackItem, Trip, TripData, Workspace } from "../types";
+import { Activity, Category, Expense, Hotel, ItineraryDay, PackItem, Trip, TripData, TripLeg, Workspace } from "../types";
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -21,7 +21,13 @@ export const emptyTripData = (trip: Trip = defaultTrip(), id = uid()): TripData 
 });
 
 /** Nome mostrado nas listas. */
-export const tripTitle = (t: Trip): string => t.name?.trim() || `${t.origin} → ${t.destination}`;
+export const tripTitle = (t: Trip): string => {
+  if (t.name?.trim()) return t.name.trim();
+  if (t.legs && t.legs.length > 1) {
+    return t.legs.map((l) => l.destination).join(" + ");
+  }
+  return `${t.origin} → ${t.destination}`;
+};
 
 // ---------- validação (dados vêm do armazenamento ou de um arquivo de terceiros) ----------
 
@@ -60,6 +66,31 @@ function sanitizeTrip(raw: unknown): Trip {
   let returnDate = isoDate(r.returnDate) ?? addDays(departDate, 7);
   if (returnDate < departDate) returnDate = departDate;
   const name = str(r.name, 80)?.trim();
+  const transport = (["aviao", "onibus", "carro", "trem", "barco"] as const).find((t) => t === r.transport);
+
+  const legs = Array.isArray(r.legs)
+    ? r.legs.flatMap((l): TripLeg[] => {
+        if (!isObj(l)) return [];
+        const dest = code(l.destination, "");
+        if (!dest) return [];
+        const nights = Math.max(1, Math.round(num(l.nights, 1, 365) ?? 1));
+        const legTransport = ((["aviao", "onibus", "carro", "trem", "barco"] as const).find((t) => t === l.transport) ?? "aviao");
+        const cost = num(l.transportCost, 0, 1e7);
+        const orig = typeof l.origin === "string" ? code(l.origin, "") : undefined;
+        return [
+          {
+            id: str(l.id, 40) || uid(),
+            destination: dest,
+            nights,
+            transport: legTransport,
+            ...(cost !== undefined ? { transportCost: cost } : {}),
+            ...(orig ? { origin: orig } : {}),
+            ...(typeof l.notes === "string" ? { notes: str(l.notes, 200) } : {}),
+          },
+        ];
+      })
+    : undefined;
+
   return {
     ...(name ? { name } : {}),
     origin: code(r.origin, d.origin),
@@ -68,6 +99,8 @@ function sanitizeTrip(raw: unknown): Trip {
     returnDate,
     travelers: Math.round(num(r.travelers, 1, 50) ?? d.travelers),
     budgetTotal: num(r.budgetTotal) ?? d.budgetTotal,
+    ...(transport ? { transport } : {}),
+    ...(legs && legs.length > 0 ? { legs } : {}),
   };
 }
 
@@ -80,7 +113,17 @@ const sanitizeHotels = (raw: unknown): Hotel[] =>
       if (!name || price === undefined) return [];
       const rating = num(x.rating, 0, 10);
       const link = safeLink(x.link);
-      return [{ id: str(x.id, 40) ?? "", name, pricePerNight: price, ...(rating !== undefined ? { rating } : {}), ...(link ? { link } : {}) }];
+      const destinationCode = typeof x.destinationCode === "string" ? str(x.destinationCode, 10) : undefined;
+      return [
+        {
+          id: str(x.id, 40) ?? "",
+          name,
+          pricePerNight: price,
+          ...(rating !== undefined ? { rating } : {}),
+          ...(link ? { link } : {}),
+          ...(destinationCode ? { destinationCode } : {}),
+        },
+      ];
     })
   );
 

@@ -19,7 +19,7 @@ export function climateFor(city: City, departDate: string): Climate {
   return winter ? (city.coldWinter ? "cold" : "mild") : summer ? "warm" : "mild";
 }
 
-const BEACH = new Set(["GIG", "SDU", "SSA", "FLN", "REC", "CUN", "MIA", "FOR", "NAT", "MCZ", "JPA", "SLZ", "VIX", "BPS", "PUJ"]);
+const BEACH = new Set(["GIG", "SDU", "SSA", "FLN", "REC", "CUN", "MIA", "FOR", "NAT", "MCZ", "JPA", "AJU", "SLZ", "VIX", "BPS", "PUJ"]);
 
 interface Suggestion {
   key: string;
@@ -65,18 +65,22 @@ export function suggestItems(trip: Trip, origin: City, destination: City): Sugge
     add("chinelo", "Chinelo", "Roupas");
     add("bone", "Boné ou chapéu", "Roupas");
   }
-  if (BEACH.has(destination.code) && climate !== "cold") add("banho", "Roupa de banho", "Roupas");
+  const allCities = trip.legs && trip.legs.length > 1
+    ? trip.legs.map((l) => l.destination)
+    : [destination.code];
+  const isBeach = allCities.some((c) => BEACH.has(c));
+  if (isBeach && climate !== "cold") add("banho", "Roupa de banho para praias", "Roupas");
 
   // Higiene
   add("dentes", "Escova e pasta de dente", "Higiene");
   add("desodorante", "Desodorante", "Higiene");
   add("shampoo", "Shampoo e condicionador (até 100 ml na bagagem de mão)", "Higiene");
-  if (climate === "warm") add("protetor", "Protetor solar", "Higiene");
+  if (climate === "warm" || isBeach) add("protetor", "Protetor solar", "Higiene");
 
   // Saúde
   add("remedios", "Remédios de uso pessoal", "Saúde");
   add("primeiros", "Kit básico: analgésico e curativos", "Saúde");
-  if (climate === "warm") add("repelente", "Repelente", "Saúde");
+  if (climate === "warm" || isBeach) add("repelente", "Repelente", "Saúde");
 
   // Eletrônicos
   add("celular", "Celular e carregador", "Eletrônicos");
@@ -88,7 +92,8 @@ export function suggestItems(trip: Trip, origin: City, destination: City): Sugge
   add("mochila", "Mochila pequena para os passeios", "Extras");
   add("garrafa", "Garrafinha reutilizável", "Extras");
   if (climate !== "warm") add("guardachuva", "Guarda-chuva compacto", "Extras");
-  if (longHaul) add("descanso", "Travesseiro de pescoço e máscara de dormir", "Extras");
+  const hasLongTravel = longHaul || (trip.legs && trip.legs.some((l) => l.transport === "onibus" || l.transport === "aviao"));
+  if (hasLongTravel) add("descanso", "Travesseiro de pescoço para deslocamentos", "Extras");
   return out;
 }
 
