@@ -1855,6 +1855,10 @@ h3 .count {
 
 /* ---------- Mensagens e Alertas ---------- */
 .banner {
+  /* Fixo no topo: quem está rolando a página também vê que há versão nova. */
+  position: sticky;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  z-index: 40;
   display: flex;
   justify-content: space-between;
   align-items: center;

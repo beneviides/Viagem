@@ -57,6 +57,22 @@ export function initPwa() {
           set({ updateReady: true });
         }
         reg.addEventListener("updatefound", () => track(reg.installing));
+
+        // Um app instalado pode ficar dias aberto em segundo plano sem recarregar, e o navegador só procura
+        // versão nova ao recarregar. Por isso procuramos ao voltar para o app, ao recuperar a internet e de tempos em tempos,
+        // sem repetir em menos de 30 segundos.
+        let lastCheck = 0;
+        const checkForUpdate = () => {
+          const now = Date.now();
+          if (document.visibilityState !== "visible" || !navigator.onLine || now - lastCheck < 30_000) return;
+          lastCheck = now;
+          reg.update().catch(() => {
+            /* sem rede agora: tenta na próxima vez */
+          });
+        };
+        document.addEventListener("visibilitychange", checkForUpdate);
+        window.addEventListener("online", checkForUpdate);
+        window.setInterval(checkForUpdate, 30 * 60 * 1000);
       })
       .catch(() => {
         /* sem service worker: o app segue funcionando online */
