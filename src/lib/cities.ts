@@ -133,3 +133,6 @@ export function distanceKm(a: City, b: City): number {
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
 }
+
+/** Países de fora do Brasil, para a opção "Incluir destinos no exterior". */
+export const ABROAD_GROUPS = CITY_GROUPS.filter((g) => g.country !== "Brasil");

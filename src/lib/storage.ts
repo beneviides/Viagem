@@ -13,7 +13,7 @@ const MAX_ITEMS = 500;
 
 export const defaultTrip = (today = new Date()): Trip => {
   const iso = new Date(today.getTime() - today.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
-  return { origin: "GRU", destination: "LIS", departDate: addDays(iso, 60), returnDate: addDays(iso, 67), travelers: 2, budgetTotal: 20000 };
+  return { origin: "GRU", destination: "GIG", departDate: addDays(iso, 60), returnDate: addDays(iso, 67), travelers: 2, budgetTotal: 20000 };
 };
 
 export const emptyTripData = (trip: Trip = defaultTrip(), id = uid()): TripData => ({

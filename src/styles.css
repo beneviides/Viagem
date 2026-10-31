@@ -109,6 +109,9 @@ button.ghost { background:transparent; color:var(--muted); min-width:44px; paddi
 .days .amt small { font-size:11px; color:var(--accent); font-weight:600; }
 .days .d { font-size:13px; color:var(--muted); }
 
+label.check-inline { flex-direction:row; align-items:flex-start; gap:10px; color:var(--ink); font-size:14px; }
+label.check-inline input { flex:none; width:22px; min-height:22px; height:22px; margin-top:1px; accent-color:var(--brand); }
+
 /* ---------- instalação e offline ---------- */
 .banner { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; padding:10px 12px 10px 16px; border-radius:12px; background:var(--accent); color:#fff; font-weight:600; }
 .banner button { min-height:36px; background:#fff; color:#0e2a33; }

@@ -1,6 +1,7 @@
 import { Trip } from "../types";
-import { CITY_GROUPS, City, ORIGIN_GROUPS, cityLabel } from "../lib/cities";
+import { ABROAD_GROUPS, City, ORIGIN_GROUPS } from "../lib/cities";
 import { DayProjection, summarizeProjection } from "../lib/budget";
+import { useState } from "react";
 import { addDays, brl, daysBetween, fmtParts } from "../lib/dates";
 
 interface Props {
@@ -11,6 +12,10 @@ interface Props {
 }
 
 export default function TripForm({ trip, destination, projection, onChange }: Props) {
+  // Destinos do Brasil sempre; os de fora entram se a pessoa pedir ou se a viagem já for para fora.
+  const [wantAbroad, setWantAbroad] = useState(false);
+  const abroadNow = destination.country !== "Brasil";
+  const showAbroad = wantAbroad || abroadNow;
   const { perPersonDay, avgDay, days } = summarizeProjection(destination, projection, trip.travelers);
   const set = <K extends keyof Trip>(k: K, v: Trip[K]) => onChange({ ...trip, [k]: v });
   // Mudar a ida mantém a duração: a volta acompanha. A volta nunca fica antes da ida.
@@ -23,8 +28,8 @@ export default function TripForm({ trip, destination, projection, onChange }: Pr
     if (!v) return;
     set("returnDate", v < trip.departDate ? trip.departDate : v);
   };
-  // Saída: só Brasil; aeroportos da mesma cidade ficam juntos e aparecem pelo nome do aeroporto.
-  const originOptions = ORIGIN_GROUPS.map((g) => (
+  // Cidades do Brasil: aeroportos da mesma cidade ficam juntos e aparecem pelo nome do aeroporto.
+  const brazilOptions = ORIGIN_GROUPS.map((g) => (
     <optgroup key={g.label} label={g.label}>
       {g.cities.map((c) => (
         <option key={c.code} value={c.code}>
@@ -33,11 +38,11 @@ export default function TripForm({ trip, destination, projection, onChange }: Pr
       ))}
     </optgroup>
   ));
-  const destinationOptions = CITY_GROUPS.map((g) => (
+  const abroadOptions = ABROAD_GROUPS.map((g) => (
     <optgroup key={g.country} label={g.country}>
       {g.cities.map((c) => (
         <option key={c.code} value={c.code}>
-          {cityLabel(c)}
+          {c.name} ({c.code})
         </option>
       ))}
     </optgroup>
@@ -85,14 +90,22 @@ export default function TripForm({ trip, destination, projection, onChange }: Pr
           <label>
             Saindo de
             <select value={trip.origin} onChange={(e) => set("origin", e.target.value)}>
-              {originOptions}
+              {brazilOptions}
             </select>
           </label>
           <label>
             Destino
             <select value={trip.destination} onChange={(e) => set("destination", e.target.value)}>
-              {destinationOptions}
+              {brazilOptions}
+              {showAbroad && abroadOptions}
             </select>
+          </label>
+          <label className="check-inline" style={{ gridColumn: "1 / -1" }}>
+            <input type="checkbox" checked={showAbroad} disabled={abroadNow} onChange={(e) => setWantAbroad(e.target.checked)} />
+            <span>
+              Incluir destinos no exterior
+              {abroadNow && <span className="muted"> (a viagem atual é para fora; escolha uma cidade do Brasil para poder desligar)</span>}
+            </span>
           </label>
           <label>
             Ida
