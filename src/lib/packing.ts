@@ -8,6 +8,7 @@ export type Climate = "cold" | "mild" | "warm";
 
 /** Clima aproximado no destino na época da ida, pela latitude e pelo mês (hemisfério). */
 export function climateFor(city: City, departDate: string): Climate {
+  if (city.climate) return city.climate; // destino digitado: a pessoa já disse como é o clima
   const lat = city.lat;
   const month = new Date(departDate + "T12:00:00").getMonth() + 1; // 1..12
   const northWinter = month >= 11 || month <= 3;
@@ -32,7 +33,7 @@ export function suggestItems(trip: Trip, origin: City, destination: City): Sugge
   const days = nightsBetween(trip.departDate, trip.returnDate) + 1;
   const intl = origin.country !== destination.country;
   const climate = climateFor(destination, trip.departDate);
-  const longHaul = distanceKm(origin, destination) > 5000;
+  const longHaul = destination.longHaul ?? distanceKm(origin, destination) > 5000;
   const out: Suggestion[] = [];
   const add = (key: string, label: string, category: PackCategory) => out.push({ key, label, category });
 
@@ -65,7 +66,7 @@ export function suggestItems(trip: Trip, origin: City, destination: City): Sugge
     add("chinelo", "Chinelo", "Roupas");
     add("bone", "Boné ou chapéu", "Roupas");
   }
-  if (BEACH.has(destination.code) && climate !== "cold") add("banho", "Roupa de banho", "Roupas");
+  if ((destination.beach ?? BEACH.has(destination.code)) && climate !== "cold") add("banho", "Roupa de banho", "Roupas");
 
   // Higiene
   add("dentes", "Escova e pasta de dente", "Higiene");

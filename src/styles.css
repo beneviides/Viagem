@@ -86,6 +86,7 @@ button.ghost { background:transparent; color:var(--muted); min-width:44px; paddi
 .meter.real > div { background:var(--accent); }
 .seg-toggle { display:flex; gap:4px; padding:4px; margin-bottom:12px; border-radius:12px; background:var(--bg); }
 .seg-toggle button { flex:1; min-height:38px; background:transparent; color:var(--muted); font:500 14px var(--body); }
+.seg-toggle button:disabled { opacity:.45; cursor:not-allowed; }
 .seg-toggle button.on { background:var(--surface); color:var(--ink); font-weight:600; box-shadow:0 0 0 1px var(--line); }
 .over-text { color:var(--bad); font-weight:600; }
 

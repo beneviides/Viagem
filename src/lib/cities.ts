@@ -14,6 +14,12 @@ export interface City {
   area?: string;
   /** Nome do aeroporto, quando a cidade tem mais de um. */
   airport?: string;
+  /** Clima fixo na época da viagem (destinos digitados); ignora a latitude e o mês. */
+  climate?: "warm" | "mild" | "cold";
+  /** Voo longo (mais de ~5 h); sem isso, calculado pela distância. */
+  longHaul?: boolean;
+  /** Tem praia (sugere roupa de banho); sem isso, usa a lista de cidades de praia. */
+  beach?: boolean;
   /** Fresco o ano todo (altitude): nunca "quente". */
   coolAlways?: boolean;
   /** Perto do trópico, mas com inverno fresco. */

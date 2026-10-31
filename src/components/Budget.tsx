@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Category, Expense, Trip } from "../types";
 import { DayProjection, Totals, summarizeProjection } from "../lib/budget";
 import { City } from "../lib/cities";
+import { ActiveCurrency, fmtMoney, toBrl, toLocal } from "../lib/currency";
 import { brl, fmtParts } from "../lib/dates";
 import { uid } from "../store";
 
@@ -26,15 +27,18 @@ interface Props {
   expected: Totals;
   real: Totals;
   expenses: Expense[];
+  /** Moeda do destino (só em viagem ao exterior). */
+  currency?: ActiveCurrency;
   onChange: (e: Expense[]) => void;
 }
 
-export default function Budget({ trip, destination, projection, summary, expected, real, expenses, onChange }: Props) {
+export default function Budget({ trip, destination, projection, summary, expected, real, expenses, currency, onChange }: Props) {
   const [category, setCategory] = useState<Category>("voo");
   const [kind, setKind] = useState<"real" | "planned">("real");
   const [date, setDate] = useState("");
   const [label, setLabel] = useState("");
   const [amount, setAmount] = useState("");
+  const [inLocal, setInLocal] = useState(false); // lançar o valor na moeda do destino
 
   const { perPersonDay, avgDay } = summarizeProjection(destination, projection, trip.travelers);
   const diff = trip.budgetTotal - summary.total;
@@ -43,10 +47,18 @@ export default function Budget({ trip, destination, projection, summary, expecte
   const realPct = summary.total > 0 ? Math.min(100, (real.total / summary.total) * 100) : 0;
   const parts = ORDER.filter((c) => summary[c] > 0);
 
+  const local = (brlValue: number) => {
+    const v = toLocal(brlValue, currency);
+    return v === undefined || !currency ? undefined : fmtMoney(v, currency.code);
+  };
+  const useLocal = inLocal && !!currency?.rate;
   const add = () => {
-    const a = parseFloat(amount);
-    if (!label.trim() || !(a > 0)) return;
-    onChange([...expenses, { id: uid(), category, label: label.trim(), amount: a, ...(kind === "real" ? { spent: true, date: date || undefined } : {}) }]);
+    const typed = parseFloat(amount.replace(",", "."));
+    if (!label.trim() || !(typed > 0)) return;
+    const inBrl = useLocal ? toBrl(typed, currency) : typed;
+    if (inBrl === undefined) return;
+    const original = useLocal && currency ? { original: { currency: currency.code, amount: typed } } : {};
+    onChange([...expenses, { id: uid(), category, label: label.trim(), amount: inBrl, ...(kind === "real" ? { spent: true, date: date || undefined } : {}), ...original }]);
     setLabel("");
     setAmount("");
   };
@@ -56,6 +68,7 @@ export default function Budget({ trip, destination, projection, summary, expecte
       <section className="card">
         <div className="stat-label">Previsão total</div>
         <div className="stat">{brl(summary.total)}</div>
+        {local(summary.total) && <p className="muted">≈ {local(summary.total)} na cotação informada</p>}
         <div className={`meter${diff < 0 ? " over" : ""}`} role="img" aria-label={`${Math.round(pct)}% do orçamento`}>
           <div style={{ width: `${pct}%` }} />
         </div>
@@ -123,7 +136,7 @@ export default function Budget({ trip, destination, projection, summary, expecte
         <div className="stat-label">Projeção diária em {destination.name}</div>
         <div className="stat">
           {brl(perPersonDay)}
-          <small>por pessoa/dia</small>
+          <small>por pessoa/dia{local(perPersonDay) ? ` · ≈ ${local(perPersonDay)}` : ""}</small>
         </div>
         <div className="chips">
           <span className="chip">
@@ -203,10 +216,26 @@ export default function Budget({ trip, destination, projection, summary, expecte
             </label>
           )}
           <label>
-            Valor (R$)
-            <input id="exp-amount" type="number" min={0} value={amount} onChange={(e) => setAmount(e.target.value)} />
+            Valor ({useLocal && currency ? currency.code : "R$"})
+            <input id="exp-amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
           </label>
         </div>
+        {currency && (
+          <div className="seg-toggle" role="radiogroup" aria-label="Moeda do valor" style={{ marginTop: 12, marginBottom: 0 }}>
+            <button type="button" role="radio" aria-checked={!useLocal} className={!useLocal ? "on" : ""} onClick={() => setInLocal(false)}>
+              Em reais (R$)
+            </button>
+            <button type="button" role="radio" aria-checked={useLocal} className={useLocal ? "on" : ""} onClick={() => setInLocal(true)} disabled={!currency.rate}>
+              Em {currency.code}
+            </button>
+          </div>
+        )}
+        {currency && !currency.rate && <p className="muted" style={{ marginTop: 8 }}>Informe a cotação na aba Viagem para lançar gastos em {currency.code}.</p>}
+        {useLocal && currency?.rate && parseFloat(amount.replace(",", ".")) > 0 && (
+          <p className="muted" style={{ marginTop: 8 }}>
+            = {brl(toBrl(parseFloat(amount.replace(",", ".")), currency) ?? 0)} na cotação de R$ {String(currency.rate).replace(".", ",")}
+          </p>
+        )}
         <button style={{ marginTop: 12, width: "100%" }} onClick={add}>
           Adicionar
         </button>
@@ -221,6 +250,7 @@ export default function Budget({ trip, destination, projection, summary, expecte
                   </span>
                 </span>
                 <span>
+                  {e.original && <span className="muted">{fmtMoney(e.original.amount, e.original.currency)} · </span>}
                   <b>{brl(e.amount)}</b>
                   <button className="ghost" aria-label={`Remover ${e.label}`} onClick={() => onChange(expenses.filter((x) => x.id !== e.id))}>
                     ✕

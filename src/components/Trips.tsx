@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { TripData, Workspace } from "../types";
 import { exportBackup, parseBackup, tripTitle } from "../lib/storage";
+import { destinationCode } from "../lib/destination";
 import { fmtParts, nightsBetween } from "../lib/dates";
 import { promptInstall, usePwa } from "../pwa";
 
@@ -99,7 +100,7 @@ export default function Trips({ ws, onOpen, onCreate, onDuplicate, onRemove, onI
                 <div>
                   <div className="name">{tripTitle(t.trip)}</div>
                   <div className="muted">
-                    {t.trip.name ? `${t.trip.origin} → ${t.trip.destination} · ` : ""}
+                    {t.trip.name ? `${t.trip.origin} → ${destinationCode(t.trip)} · ` : ""}
                     {short(t.trip.departDate)} a {short(t.trip.returnDate)} · {nightsBetween(t.trip.departDate, t.trip.returnDate)} noites · {t.trip.travelers} pessoa(s)
                   </div>
                 </div>

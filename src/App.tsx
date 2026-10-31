@@ -3,6 +3,8 @@ import { useWorkspace } from "./store";
 import { applyUpdate, useOffline, usePwa } from "./pwa";
 import { Expense, Hotel, ItineraryDay, PackItem, Trip } from "./types";
 import { cityByCode } from "./lib/cities";
+import { resolveDestination } from "./lib/destination";
+import { activeCurrency } from "./lib/currency";
 import { daysBetween } from "./lib/dates";
 import { shiftItinerary } from "./lib/itinerary";
 import { dailyProjection, forecast, projected, realized, totals } from "./lib/budget";
@@ -68,8 +70,10 @@ export default function App() {
     setTrip(next);
   };
 
-  const destination = cityByCode(trip.destination);
+  // Destino já com os valores que a pessoa ajustou (ou o lugar digitado por ela).
+  const destination = useMemo(() => resolveDestination(trip), [trip.destination, trip.place, trip.costs]);
   const origin = cityByCode(trip.origin);
+  const currency = useMemo(() => (destination ? activeCurrency(trip, destination.country) : undefined), [trip.currency, destination?.country]);
 
   const { summary, expected, real, projection } = useMemo(() => {
     if (!destination) return { summary: undefined, expected: undefined, real: undefined, projection: [] };
@@ -118,7 +122,7 @@ export default function App() {
             onImport={importTrips}
           />
         )}
-        {tab === "Viagem" && <TripForm trip={trip} destination={destination} projection={projection} onChange={changeTrip} />}
+        {tab === "Viagem" && <TripForm trip={trip} destination={destination} projection={projection} currency={currency} onChange={changeTrip} />}
         {tab === "Hotéis" && (
           <Hotels
             trip={trip}
@@ -130,7 +134,7 @@ export default function App() {
           />
         )}
         {tab === "Gastos" && (
-          <Budget trip={trip} destination={destination} summary={summary} expected={expected} real={real} projection={projection} expenses={expenses} onChange={setExpenses} />
+          <Budget trip={trip} destination={destination} summary={summary} expected={expected} real={real} projection={projection} currency={currency} expenses={expenses} onChange={setExpenses} />
         )}
         {tab === "Roteiro" && <Itinerary trip={trip} days={days} onChange={setDays} />}
         {tab === "Mala" && <Packing trip={trip} origin={origin} destination={destination} items={pack} onChange={setPack} />}

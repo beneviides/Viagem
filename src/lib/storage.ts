@@ -1,7 +1,9 @@
 import { CITIES } from "./cities";
 import { addDays } from "./dates";
 import { PACK_CATEGORIES } from "./packing";
-import { Activity, Category, Expense, Hotel, ItineraryDay, PackItem, Trip, TripData, Workspace } from "../types";
+import { CUSTOM_CODE, codeFromName, defaultPlace, destinationCode } from "./destination";
+import { isCurrencyCode } from "./currency";
+import { Activity, Category, ClimateKind, Costs, Expense, Hotel, ItineraryDay, PackItem, Place, Trip, TripData, Workspace } from "../types";
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -21,7 +23,7 @@ export const emptyTripData = (trip: Trip = defaultTrip(), id = uid()): TripData 
 });
 
 /** Nome mostrado nas listas. */
-export const tripTitle = (t: Trip): string => t.name?.trim() || `${t.origin} → ${t.destination}`;
+export const tripTitle = (t: Trip): string => t.name?.trim() || `${t.origin} → ${destinationCode(t)}`;
 
 // ---------- validação (dados vêm do armazenamento ou de um arquivo de terceiros) ----------
 
@@ -52,6 +54,42 @@ function ids<T extends { id: string }>(items: T[]): T[] {
   });
 }
 
+const CLIMATES: ClimateKind[] = ["warm", "mild", "cold"];
+const COST_KEYS: (keyof Costs)[] = ["comida", "transporte", "passeios", "hotelAvg"];
+
+function sanitizePlace(raw: unknown): Place {
+  const d = defaultPlace();
+  const r = isObj(raw) ? raw : {};
+  const name = str(r.name, 60)?.trim() || d.name;
+  const code = typeof r.code === "string" && /^[A-Za-z]{3,4}$/.test(r.code) ? r.code.toUpperCase() : codeFromName(name);
+  const tip = str(r.tip, 300)?.trim();
+  return {
+    name,
+    country: str(r.country, 60)?.trim() || d.country,
+    code,
+    climate: CLIMATES.find((c) => c === r.climate) ?? d.climate,
+    longHaul: r.longHaul === true,
+    beach: r.beach === true,
+    ...(tip ? { tip } : {}),
+  };
+}
+
+function sanitizeCosts(raw: unknown): Partial<Costs> | undefined {
+  if (!isObj(raw)) return undefined;
+  const out: Partial<Costs> = {};
+  for (const k of COST_KEYS) {
+    const v = num(raw[k], 0, 1_000_000);
+    if (v !== undefined) out[k] = v;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+function sanitizeCurrency(raw: unknown): Trip["currency"] {
+  if (!isObj(raw) || !isCurrencyCode(raw.code)) return undefined;
+  const rate = num(raw.rate, 0, 10_000_000);
+  return { code: raw.code, ...(rate && rate > 0 ? { rate } : {}) };
+}
+
 function sanitizeTrip(raw: unknown): Trip {
   const d = defaultTrip();
   const r = isObj(raw) ? raw : {};
@@ -60,14 +98,21 @@ function sanitizeTrip(raw: unknown): Trip {
   let returnDate = isoDate(r.returnDate) ?? addDays(departDate, 7);
   if (returnDate < departDate) returnDate = departDate;
   const name = str(r.name, 80)?.trim();
+  // Destino digitado: só vale se veio junto com os dados do lugar.
+  const custom = r.destination === CUSTOM_CODE && isObj(r.place);
+  const costs = sanitizeCosts(r.costs);
+  const currency = sanitizeCurrency(r.currency);
   return {
     ...(name ? { name } : {}),
     origin: code(r.origin, d.origin),
-    destination: code(r.destination, d.destination),
+    destination: custom ? CUSTOM_CODE : code(r.destination, d.destination),
     departDate,
     returnDate,
     travelers: Math.round(num(r.travelers, 1, 50) ?? d.travelers),
     budgetTotal: num(r.budgetTotal) ?? d.budgetTotal,
+    ...(custom ? { place: sanitizePlace(r.place) } : {}),
+    ...(costs ? { costs } : {}),
+    ...(currency ? { currency } : {}),
   };
 }
 
@@ -93,7 +138,9 @@ const sanitizeExpenses = (raw: unknown): Expense[] =>
       const label = str(x.label, 120);
       if (!category || amount === undefined || !label) return [];
       const date = isoDate(x.date);
-      return [{ id: str(x.id, 40) ?? "", category, label, amount, ...(x.spent === true ? { spent: true } : {}), ...(date ? { date } : {}) }];
+      const o = isObj(x.original) && isCurrencyCode(x.original.currency) ? { currency: x.original.currency, amount: num(x.original.amount, 0, 1e12) } : undefined;
+      const original = o && o.amount !== undefined ? { currency: o.currency, amount: o.amount } : undefined;
+      return [{ id: str(x.id, 40) ?? "", category, label, amount, ...(x.spent === true ? { spent: true } : {}), ...(date ? { date } : {}), ...(original ? { original } : {}) }];
     })
   );
 

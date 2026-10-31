@@ -7,6 +7,34 @@ export interface Trip {
   returnDate: string;
   travelers: number;
   budgetTotal: number; // orçamento total em BRL
+  /** Destino digitado pela pessoa; vale quando `destination` é o código "OUT". */
+  place?: Place;
+  /** Valores por pessoa/dia ajustados pela pessoa; o que faltar vem do padrão do destino. */
+  costs?: Partial<Costs>;
+  /** Moeda do destino (viagem ao exterior) e a cotação informada: 1 unidade = `rate` reais. */
+  currency?: { code: string; rate?: number };
+}
+
+export type ClimateKind = "warm" | "mild" | "cold";
+
+/** Custos por pessoa/dia em R$ (a diária do hotel é por quarto). */
+export interface Costs {
+  comida: number;
+  transporte: number;
+  passeios: number;
+  hotelAvg: number;
+}
+
+/** Destino que não está na lista. */
+export interface Place {
+  name: string;
+  country: string;
+  /** Até 4 letras, mostrado no cartão (ex.: "FNO"). */
+  code: string;
+  climate: ClimateKind;
+  longHaul: boolean;
+  beach: boolean;
+  tip?: string;
 }
 
 export interface Hotel {
@@ -26,6 +54,8 @@ export interface Expense {
   spent?: boolean;
   /** Dia do gasto real (yyyy-mm-dd), opcional. */
   date?: string;
+  /** Valor digitado em outra moeda; `amount` já está em reais, convertido pela cotação da época. */
+  original?: { currency: string; amount: number };
 }
 
 export type Category = "voo" | "hotel" | "comida" | "transporte" | "passeios" | "outros";
