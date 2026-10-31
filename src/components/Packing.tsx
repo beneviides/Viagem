@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { PackCategory, PackItem, Trip } from "../types";
 import { City } from "../lib/cities";
 import { PACK_CATEGORIES, climateFor, suggestItems, syncSuggestions } from "../lib/packing";
@@ -59,11 +60,20 @@ export default function Packing({ trip, origin, destination, items, onChange }: 
           </div>
         )}
 
-        {items.length > 0 && packed === items.length && (
-          <div className="mood" style={{ background: "linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(245, 158, 11, 0.15))", borderColor: "var(--ok)" }}>
-            <span>🎉 Sensacional! 100% da mala organizada e pronta para as férias! 🏖️✈️</span>
-          </div>
-        )}
+        <AnimatePresence>
+          {items.length > 0 && packed === items.length && (
+            <motion.div
+              className="mood"
+              initial={{ opacity: 0, y: 8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.98 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              style={{ background: "linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(245, 158, 11, 0.15))", borderColor: "var(--ok)" }}
+            >
+              <span>🎉 Sensacional! 100% da mala organizada e pronta para as férias! 🏖️✈️</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Filtros da Mala */}
         {items.length > 0 && (
@@ -119,7 +129,14 @@ export default function Packing({ trip, origin, destination, items, onChange }: 
         const allDone = done === catItems.length && catItems.length > 0;
 
         return (
-          <section className="card" key={cat}>
+          <motion.section
+            className="card"
+            key={cat}
+            layout
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          >
             <h3>
               <span>
                 {CAT_ICONS[cat]} {cat}
@@ -130,46 +147,59 @@ export default function Packing({ trip, origin, destination, items, onChange }: 
             </h3>
 
             <ul className="checklist">
-              {list.map((i) => (
-                <li key={i.id}>
-                  <button
-                    type="button"
-                    role="checkbox"
-                    aria-checked={i.packed}
-                    className={`check${i.packed ? " on" : ""}`}
-                    onClick={() => toggle(i.id)}
+              <AnimatePresence initial={false}>
+                {list.map((i, idx) => (
+                  <motion.li
+                    key={i.id}
+                    layout
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                    transition={{
+                      duration: 0.24,
+                      delay: Math.min(idx * 0.02, 0.2),
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
                   >
-                    <span className="box" aria-hidden="true">
-                      {i.packed && (
-                        <svg
-                          viewBox="0 0 16 16"
-                          width="14"
-                          height="14"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.4"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M3 8.5l3.2 3L13 4.5" />
-                        </svg>
-                      )}
-                    </span>
-                    <span className="lbl">{i.label}</span>
-                  </button>
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={i.packed}
+                      className={`check${i.packed ? " on" : ""}`}
+                      onClick={() => toggle(i.id)}
+                    >
+                      <span className="box" aria-hidden="true">
+                        {i.packed && (
+                          <svg
+                            viewBox="0 0 16 16"
+                            width="14"
+                            height="14"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M3 8.5l3.2 3L13 4.5" />
+                          </svg>
+                        )}
+                      </span>
+                      <span className="lbl">{i.label}</span>
+                    </button>
 
-                  <button
-                    className="ghost"
-                    aria-label={`Remover ${i.label}`}
-                    title="Remover item"
-                    onClick={() => onChange(items.filter((x) => x.id !== i.id))}
-                  >
-                    ✕
-                  </button>
-                </li>
-              ))}
+                    <button
+                      className="ghost"
+                      aria-label={`Remover ${i.label}`}
+                      title="Remover item"
+                      onClick={() => onChange(items.filter((x) => x.id !== i.id))}
+                    >
+                      ✕
+                    </button>
+                  </motion.li>
+                ))}
+              </AnimatePresence>
             </ul>
-          </section>
+          </motion.section>
         );
       })}
 

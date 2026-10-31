@@ -253,6 +253,39 @@ function SingleLegCard({
   const transportMeta = TRANSPORT_INFO[leg.transport] || TRANSPORT_INFO.aviao;
   const isMulti = totalLegs > 1;
   const countdown = countdownLabel(leg.startDate, leg.endDate);
+  const [isFlying, setIsFlying] = useState(false);
+  const [funQuote, setFunQuote] = useState<string | null>(null);
+  const quoteTimeoutRef = useRef<number | null>(null);
+
+  const triggerFunFlight = () => {
+    setIsFlying(true);
+    const quotes =
+      leg.transport === "onibus"
+        ? [
+            "Ônibus com ar no 15°C: traz o casaco! 🚌❄️",
+            "Pé na estrada ouvindo uma playlist de férias! 🎶🛣️",
+            "Parada no posto garantida para comer coxinha e pastel! 🥐🤤",
+            "Sem pressa e sem trânsito na cabeça! 🌴🛣️",
+            "Partiu curtir a estrada com vista incrível! 🏞️✨",
+          ]
+        : [
+            "Apertem os cintos: modo férias 100% ATIVADO! 🏖️🍹",
+            "Janelinha é minha! Olha o visual lá embaixo! ☁️🤩",
+            "Capitão avisa: turbulência zero e chopp gelado na chegada! 🍻✈️",
+            "Sem reunião de trabalho pelos próximos dias, aleluia! 📵✨",
+            "Partiu comer caranguejo e acarajé no capricho! 🦀🍤",
+            "Chefe, só volto se a bateria do celular acabar! 😂🧳",
+            "Alô mãe, cheguei no paraíso! 🥥🌴",
+          ];
+    const picked = quotes[Math.floor(Math.random() * quotes.length)];
+    setFunQuote(picked);
+
+    if (quoteTimeoutRef.current) clearTimeout(quoteTimeoutRef.current);
+    quoteTimeoutRef.current = window.setTimeout(() => {
+      setFunQuote(null);
+      setIsFlying(false);
+    }, 3200);
+  };
 
   return (
     <section
@@ -312,15 +345,24 @@ function SingleLegCard({
           <span className="city">{place(origin)}</span>
         </div>
 
-        <div className="route-line" aria-hidden="true">
+        <div className="route-line" style={{ position: "relative" }}>
           <i />
-          <div
-            className="route-plane"
-            title={`${transportMeta.label}: ${origin.name} → ${destination.name}`}
+          <button
+            type="button"
+            className={`route-plane-btn${isFlying ? " flying" : ""}`}
+            onClick={triggerFunFlight}
+            title={`Toque para decolar! ${transportMeta.label}: ${origin.name} → ${destination.name}`}
+            aria-label={`Efeito divertido de decolagem com ${transportMeta.label}`}
           >
-            <span>{transportMeta.icon}</span>
-          </div>
+            <span className="route-plane-icon">{transportMeta.icon}</span>
+          </button>
           <i />
+
+          {funQuote && (
+            <div className="plane-speech-bubble" role="status">
+              {funQuote}
+            </div>
+          )}
         </div>
 
         <div className="leg end">
