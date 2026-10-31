@@ -29,5 +29,9 @@ function serviceWorker(): Plugin {
 // base "./": os caminhos funcionam em qualquer endereço, inclusive em subpasta (GitHub Pages).
 export default defineConfig({
   base: "./",
+  server: {
+    host: "0.0.0.0",
+    port: 3000,
+  },
   plugins: [react(), serviceWorker()],
 });

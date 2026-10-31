@@ -1,0 +1,6 @@
+{
+  "name": "Viagem - Planejador de Viagens",
+  "description": "Planejador de viagens completo: roteiro, orçamento, hotéis, lista de mala e notas.",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
