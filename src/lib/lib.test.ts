@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cityByCode } from "./cities";
+import { CITIES, CITY_GROUPS, cityByCode } from "./cities";
 import { dailyProjection, forecast, projected, realized, totals } from "./budget";
 import { countdownLabel, daysBetween } from "./dates";
 import { outsideRange, shiftItinerary } from "./itinerary";
@@ -143,5 +143,33 @@ describe("previsto x real", () => {
   it("soma o real por dia na projeção diária", () => {
     const p = dailyProjection({ destination: lis, departDate: "2027-03-10", returnDate: "2027-03-12", travelers: 2, hotels: [], itinerary: [], expenses: [ex({ spent: true, date: "2027-03-11", amount: 80 }), ex({ spent: true, date: "2027-03-11", amount: 20 })] });
     expect(p.map((d) => d.real)).toEqual([0, 100, 0]);
+  });
+});
+
+describe("lista de cidades", () => {
+  it("códigos únicos e dados coerentes", () => {
+    const codes = CITIES.map((c) => c.code);
+    expect(new Set(codes).size).toBe(codes.length);
+    for (const c of CITIES) {
+      expect(c.code).toMatch(/^[A-Z]{3}$/);
+      expect(Math.abs(c.lat)).toBeLessThanOrEqual(90);
+      expect(Math.abs(c.lon)).toBeLessThanOrEqual(180);
+      expect(c.daily.comida).toBeGreaterThan(0);
+      expect(c.daily.transporte).toBeGreaterThan(0);
+      expect(c.daily.passeios).toBeGreaterThan(0);
+      expect(c.hotelAvg).toBeGreaterThan(0);
+      expect(c.tip.length).toBeGreaterThan(20);
+    }
+  });
+  it("há muitas opções de saída no Brasil e o Brasil vem primeiro", () => {
+    expect(CITIES.filter((c) => c.country === "Brasil").length).toBeGreaterThanOrEqual(20);
+    expect(CITY_GROUPS[0].country).toBe("Brasil");
+    expect(CITY_GROUPS.flatMap((g) => g.cities)).toHaveLength(CITIES.length);
+  });
+  it("clima: altitude é sempre ameno e o sul do Brasil esfria no inverno", () => {
+    expect(climateFor(cityByCode("BOG")!, "2027-01-10")).toBe("mild");
+    expect(climateFor(cityByCode("POA")!, "2027-07-10")).toBe("mild");
+    expect(climateFor(cityByCode("POA")!, "2027-01-10")).toBe("warm");
+    expect(climateFor(cityByCode("FOR")!, "2027-07-10")).toBe("warm");
   });
 });

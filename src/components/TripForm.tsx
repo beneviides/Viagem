@@ -1,5 +1,5 @@
 import { Trip } from "../types";
-import { CITIES, City } from "../lib/cities";
+import { CITY_GROUPS, City } from "../lib/cities";
 import { DayProjection, summarizeProjection } from "../lib/budget";
 import { addDays, brl, daysBetween, fmtParts } from "../lib/dates";
 
@@ -23,10 +23,14 @@ export default function TripForm({ trip, destination, projection, onChange }: Pr
     if (!v) return;
     set("returnDate", v < trip.departDate ? trip.departDate : v);
   };
-  const cityOptions = CITIES.map((c) => (
-    <option key={c.code} value={c.code}>
-      {c.name} ({c.code}) · {c.country}
-    </option>
+  const cityOptions = CITY_GROUPS.map((g) => (
+    <optgroup key={g.country} label={g.country}>
+      {g.cities.map((c) => (
+        <option key={c.code} value={c.code}>
+          {c.name} ({c.code})
+        </option>
+      ))}
+    </optgroup>
   ));
   return (
     <>

@@ -9,16 +9,17 @@ export type Climate = "cold" | "mild" | "warm";
 /** Clima aproximado no destino na época da ida, pela latitude e pelo mês (hemisfério). */
 export function climateFor(city: City, departDate: string): Climate {
   const lat = city.lat;
-  if (Math.abs(lat) < 30) return "warm";
   const month = new Date(departDate + "T12:00:00").getMonth() + 1; // 1..12
   const northWinter = month >= 11 || month <= 3;
   const northSummer = month >= 5 && month <= 9;
   const winter = lat >= 0 ? northWinter : northSummer;
   const summer = lat >= 0 ? northSummer : northWinter;
+  if (city.coolAlways) return "mild"; // altitude: nunca "quente"
+  if (Math.abs(lat) < 30) return city.coolWinter && winter ? "mild" : "warm";
   return winter ? (city.coldWinter ? "cold" : "mild") : summer ? "warm" : "mild";
 }
 
-const BEACH = new Set(["GIG", "SSA", "FLN", "REC", "CUN", "MIA"]);
+const BEACH = new Set(["GIG", "SSA", "FLN", "REC", "CUN", "MIA", "FOR", "NAT", "MCZ", "JPA", "SLZ", "VIX", "BPS", "PUJ"]);
 
 interface Suggestion {
   key: string;
