@@ -35,54 +35,94 @@ export default function Hotels({ trip, destination, hotels, onChange, selectedId
   };
 
   return (
-    <section>
-      <div className="card">
-        <p>
-          {nights} noite(s) · {rooms} quarto(s) · média em {destination.name}: <strong>{brl(destination.hotelAvg)}</strong>/noite
-        </p>
-        <div className="form">
-          <input placeholder="Nome do hotel" value={name} onChange={(e) => setName(e.target.value)} />
-          <input placeholder="Diária (R$)" type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)} />
-          <input placeholder="Nota (0–10)" type="number" min={0} max={10} step={0.1} value={rating} onChange={(e) => setRating(e.target.value)} />
-          <input placeholder="Link da reserva (opcional)" value={link} onChange={(e) => setLink(e.target.value)} />
-          <button onClick={add}>Adicionar</button>
+    <>
+      <section className="card">
+        <div className="stat-label">Média em {destination.name}</div>
+        <div className="stat">
+          {brl(destination.hotelAvg)}
+          <small>por noite</small>
         </div>
-      </div>
-      {hotels.length === 0 && <p className="muted">Adicione hotéis para comparar o custo total da estadia.</p>}
-      <ul className="list">
-        {sorted.map((h) => {
-          const total = h.pricePerNight * nights * rooms;
-          const vsAvg = Math.round(((h.pricePerNight - destination.hotelAvg) / destination.hotelAvg) * 100);
-          return (
-            <li key={h.id} className={selectedId === h.id ? "selected" : ""}>
-              <div>
-                <strong>{h.name}</strong> {h === cheapest && <span className="tag">mais barato</span>}
-                <div className="muted">
-                  {brl(h.pricePerNight)}/noite ({vsAvg >= 0 ? "+" : ""}
-                  {vsAvg}% vs média){h.rating !== undefined && ` · nota ${h.rating}`}
+        <div className="chips">
+          <span className="chip">
+            <b>{nights}</b> noite(s)
+          </span>
+          <span className="chip">
+            <b>{rooms}</b> quarto(s)
+          </span>
+        </div>
+      </section>
+      {hotels.length === 0 ? (
+        <p className="muted">Adicione hotéis para comparar o custo total da estadia.</p>
+      ) : (
+        <ul className="list">
+          {sorted.map((h) => {
+            const total = h.pricePerNight * nights * rooms;
+            const vsAvg = Math.round(((h.pricePerNight - destination.hotelAvg) / destination.hotelAvg) * 100);
+            const selected = selectedId === h.id;
+            return (
+              <li key={h.id} className={`item${selected ? " selected" : ""}`}>
+                <div>
+                  <div className="name">{h.name}</div>
+                  <div className="muted">
+                    {brl(h.pricePerNight)}/noite
+                    {h.rating !== undefined && ` · nota ${h.rating}`}
+                  </div>
+                </div>
+                <div>
+                  <div className="price">{brl(total)}</div>
+                  <div className="muted" style={{ textAlign: "right" }}>
+                    estadia
+                  </div>
+                </div>
+                <div className="sub">
+                  {h === cheapest && hotels.length > 1 && <span className="pill">mais barato</span>}
+                  <span className={`pill${vsAvg > 0 ? " warn" : ""}`}>
+                    {vsAvg >= 0 ? "+" : ""}
+                    {vsAvg}% vs média
+                  </span>
                   {h.link && (
-                    <>
-                      {" · "}
-                      <a href={h.link} target="_blank" rel="noreferrer noopener">
-                        reservar
-                      </a>
-                    </>
+                    <a href={h.link} target="_blank" rel="noreferrer noopener">
+                      reservar
+                    </a>
                   )}
                 </div>
-              </div>
-              <div className="right">
-                <strong>{brl(total)}</strong>
-                <button onClick={() => onSelect(selectedId === h.id ? undefined : h.id)}>
-                  {selectedId === h.id ? "Escolhido ✓" : "Escolher"}
-                </button>
-                <button className="ghost" onClick={() => onChange(hotels.filter((x) => x.id !== h.id))}>
-                  ✕
-                </button>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
+                <div className="actions">
+                  <button className={`secondary${selected ? " on" : ""}`} onClick={() => onSelect(selected ? undefined : h.id)}>
+                    {selected ? "Escolhido ✓" : "Escolher"}
+                  </button>
+                  <button className="ghost" aria-label={`Remover ${h.name}`} onClick={() => onChange(hotels.filter((x) => x.id !== h.id))}>
+                    ✕
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <section className="card">
+        <h3>Adicionar hotel</h3>
+        <div className="form">
+          <label>
+            Nome
+            <input id="hotel-name" value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+          <label>
+            Diária (R$)
+            <input id="hotel-price" type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)} />
+          </label>
+          <label>
+            Nota (0 a 10)
+            <input id="hotel-rating" type="number" min={0} max={10} step={0.1} value={rating} onChange={(e) => setRating(e.target.value)} />
+          </label>
+          <label>
+            Link da reserva
+            <input id="hotel-link" value={link} onChange={(e) => setLink(e.target.value)} />
+          </label>
+        </div>
+        <button style={{ marginTop: 12, width: "100%" }} onClick={add}>
+          Adicionar
+        </button>
+      </section>
+    </>
   );
 }
