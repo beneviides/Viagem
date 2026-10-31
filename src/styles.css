@@ -49,7 +49,7 @@ main { display:grid; gap:14px; margin-top:14px; }
 .leg { display:flex; flex-direction:column; min-width:0; }
 .leg.end { text-align:right; align-items:flex-end; }
 .code { font:700 52px/0.95 var(--display); letter-spacing:.02em; }
-.city { color:var(--hero-muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.city { color:var(--hero-muted); font-size:13px; line-height:1.25; max-width:100%; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .route-line { display:flex; align-items:center; gap:6px; color:var(--hero-muted); }
 .route-line i { display:block; width:clamp(16px,8vw,56px); border-top:2px dashed var(--hero-line); }
 .pass-stub { position:relative; display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:14px 20px 16px; border-top:2px dashed var(--hero-line); }

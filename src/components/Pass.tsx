@@ -2,6 +2,18 @@ import { City } from "../lib/cities";
 import { Trip } from "../types";
 import { countdownLabel, fmtParts, nightsBetween } from "../lib/dates";
 
+// Cidade com vários aeroportos: cidade numa linha, aeroporto na outra.
+const place = (c: City) =>
+  c.airport ? (
+    <>
+      {c.area}
+      <br />
+      {c.airport}
+    </>
+  ) : (
+    c.name
+  );
+
 const short = (iso: string) => {
   const p = fmtParts(iso);
   return `${p.day} ${p.month}`;
@@ -27,7 +39,7 @@ export default function Pass({ trip, origin, destination, tripCount, onOpenTrips
       <div className="pass-route">
         <div className="leg">
           <span className="code">{origin.code}</span>
-          <span className="city">{origin.name}</span>
+          <span className="city">{place(origin)}</span>
         </div>
         <div className="route-line" aria-hidden="true">
           <i />
@@ -38,7 +50,7 @@ export default function Pass({ trip, origin, destination, tripCount, onOpenTrips
         </div>
         <div className="leg end">
           <span className="code">{destination.code}</span>
-          <span className="city">{destination.name}</span>
+          <span className="city">{place(destination)}</span>
         </div>
       </div>
       <dl className="pass-stub">

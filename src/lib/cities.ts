@@ -10,6 +10,10 @@ export interface City {
   hotelAvg: number;
   /** Inverno com frio de verdade (casaco pesado). */
   coldWinter?: boolean;
+  /** Cidade/região quando ela tem mais de um aeroporto (ex.: "São Paulo"). */
+  area?: string;
+  /** Nome do aeroporto, quando a cidade tem mais de um. */
+  airport?: string;
   /** Fresco o ano todo (altitude): nunca "quente". */
   coolAlways?: boolean;
   /** Perto do trópico, mas com inverno fresco. */
@@ -19,8 +23,8 @@ export interface City {
 }
 
 export const CITIES: City[] = [
-  { code: "GRU", name: "São Paulo", country: "Brasil", lat: -23.43, lon: -46.47, daily: { comida: 120, transporte: 40, passeios: 80 }, hotelAvg: 380, tip: "São Paulo tem mais de 11 milhões de habitantes e uma diversidade gastronômica enorme: dá para comer a cozinha de dezenas de países sem sair da cidade." },
-  { code: "GIG", name: "Rio de Janeiro", country: "Brasil", lat: -22.81, lon: -43.25, daily: { comida: 110, transporte: 35, passeios: 90 }, hotelAvg: 420, tip: "O Cristo Redentor fica no alto do Corcovado. Vá cedo, com céu aberto, para pegar a vista sem nuvens." },
+  { code: "GRU", name: "São Paulo (Guarulhos)", area: "São Paulo", airport: "Guarulhos", country: "Brasil", lat: -23.43, lon: -46.47, daily: { comida: 120, transporte: 40, passeios: 80 }, hotelAvg: 380, tip: "São Paulo tem mais de 11 milhões de habitantes e uma diversidade gastronômica enorme: dá para comer a cozinha de dezenas de países sem sair da cidade." },
+  { code: "GIG", name: "Rio de Janeiro (Galeão)", area: "Rio de Janeiro", airport: "Galeão", country: "Brasil", lat: -22.81, lon: -43.25, daily: { comida: 110, transporte: 35, passeios: 90 }, hotelAvg: 420, tip: "O Cristo Redentor fica no alto do Corcovado. Vá cedo, com céu aberto, para pegar a vista sem nuvens." },
   { code: "SSA", name: "Salvador", country: "Brasil", lat: -12.91, lon: -38.33, daily: { comida: 90, transporte: 30, passeios: 70 }, hotelAvg: 300, tip: "Salvador foi a primeira capital do Brasil, de 1549 a 1763. O Pelourinho guarda esse passado em cada rua." },
   { code: "FLN", name: "Florianópolis", country: "Brasil", lat: -27.67, lon: -48.55, daily: { comida: 100, transporte: 45, passeios: 80 }, hotelAvg: 390, tip: "Florianópolis fica numa ilha e tem mais de 40 praias. Escolha uma por dia e o roteiro se monta sozinho." },
   { code: "REC", name: "Recife", country: "Brasil", lat: -8.13, lon: -34.92, daily: { comida: 90, transporte: 30, passeios: 60 }, hotelAvg: 290, tip: "Recife é chamada de Veneza brasileira por causa dos rios e das dezenas de pontes que cortam a cidade." },
@@ -40,7 +44,7 @@ export const CITIES: City[] = [
 const mk = (
   code: string, name: string, country: string, lat: number, lon: number,
   comida: number, transporte: number, passeios: number, hotelAvg: number, tip: string,
-  extra: Partial<Pick<City, "coldWinter" | "coolAlways" | "coolWinter">> = {}
+  extra: Partial<Pick<City, "coldWinter" | "coolAlways" | "coolWinter" | "area" | "airport">> = {}
 ): City => ({ code, name, country, lat, lon, daily: { comida, transporte, passeios }, hotelAvg, tip, ...extra });
 
 CITIES.push(
@@ -60,8 +64,9 @@ CITIES.push(
   mk("VIX", "Vitória", "Brasil", -20.26, -40.29, 95, 30, 60, 300, "Em Vitória, peça a moqueca capixaba, servida na panela de barro."),
   mk("IGU", "Foz do Iguaçu", "Brasil", -25.6, -54.49, 100, 35, 110, 350, "As Cataratas do Iguaçu ficam em dois países. Vale ver o lado brasileiro e o argentino."),
   mk("BPS", "Porto Seguro", "Brasil", -16.44, -39.08, 100, 35, 90, 330, "Porto Seguro tem praias com barracas animadas e a história do descobrimento do Brasil."),
-  mk("CGH", "São Paulo (Congonhas)", "Brasil", -23.63, -46.66, 120, 40, 80, 380, "Congonhas fica dentro de São Paulo, perto do centro, e recebe só voos nacionais."),
-  mk("VCP", "Campinas (Viracopos)", "Brasil", -23.01, -47.14, 100, 35, 70, 330, "Viracopos fica em Campinas, a cerca de 100 km de São Paulo. Confira o transporte até a cidade antes de chegar."),
+  mk("CGH", "São Paulo (Congonhas)", "Brasil", -23.63, -46.66, 120, 40, 80, 380, "Congonhas fica dentro de São Paulo, perto do centro, e recebe só voos nacionais.", { area: "São Paulo", airport: "Congonhas" }),
+  mk("VCP", "Campinas (Viracopos)", "Brasil", -23.01, -47.14, 100, 35, 70, 330, "Viracopos fica em Campinas, a cerca de 100 km de São Paulo. Confira o transporte até a cidade antes de chegar.", { area: "São Paulo", airport: "Viracopos" }),
+  mk("SDU", "Rio de Janeiro (Santos Dumont)", "Brasil", -22.91, -43.16, 110, 35, 90, 420, "Santos Dumont fica no centro do Rio, a poucos minutos do Aterro do Flamengo. Opera só voos nacionais.", { area: "Rio de Janeiro", airport: "Santos Dumont" }),
   // Europa
   mk("BCN", "Barcelona", "Espanha", 41.3, 2.08, 270, 55, 160, 750, "Reserve com antecedência os ingressos da Sagrada Família: as filas são longas."),
   mk("OPO", "Porto", "Portugal", 41.24, -8.68, 200, 50, 120, 520, "O Porto é famoso pelo vinho do Porto: visite as caves do outro lado do rio, em Vila Nova de Gaia."),
@@ -90,6 +95,23 @@ CITIES.push(
   mk("SIN", "Singapura", "Singapura", 1.36, 103.99, 280, 50, 170, 900, "Singapura é limpa e tem comida boa e barata nos hawker centres."),
   mk("BKK", "Bangkok", "Tailândia", 13.69, 100.75, 110, 25, 90, 320, "Bangkok é quente e úmida o ano todo. Prefira roupas leves e passeios cedo ou à noite.")
 );
+
+/** Texto de uma cidade nas listas. Com vários aeroportos: "São Paulo · Congonhas (CGH)". */
+export const cityLabel = (c: City): string => (c.airport ? `${c.area ?? c.name} · ${c.airport} (${c.code})` : `${c.name} (${c.code})`);
+
+/** Saídas: só cidades do Brasil. Cidades com mais de um aeroporto ficam juntas, sob o nome da cidade. */
+export const ORIGIN_GROUPS: { label: string; cities: City[] }[] = (() => {
+  const br = CITIES.filter((c) => c.country === "Brasil");
+  const byArea = new Map<string, City[]>();
+  for (const c of br) if (c.area) byArea.set(c.area, [...(byArea.get(c.area) ?? []), c]);
+  const multi = [...byArea].filter(([, list]) => list.length > 1).sort(([a], [b]) => a.localeCompare(b, "pt-BR"));
+  const grouped = new Set(multi.flatMap(([, list]) => list.map((c) => c.code)));
+  const rest = br.filter((c) => !grouped.has(c.code)).sort((x, y) => x.name.localeCompare(y.name, "pt-BR"));
+  return [
+    ...multi.map(([label, list]) => ({ label: `${label}${label === "São Paulo" ? " e região" : ""} (${list.length} aeroportos)`, cities: list })),
+    { label: "Outras cidades", cities: rest },
+  ];
+})();
 
 /** Cidades agrupadas por país (Brasil primeiro), para listas de escolha. */
 export const CITY_GROUPS: { country: string; cities: City[] }[] = (() => {

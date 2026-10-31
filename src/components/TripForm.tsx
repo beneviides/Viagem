@@ -1,5 +1,5 @@
 import { Trip } from "../types";
-import { CITY_GROUPS, City } from "../lib/cities";
+import { CITY_GROUPS, City, ORIGIN_GROUPS, cityLabel } from "../lib/cities";
 import { DayProjection, summarizeProjection } from "../lib/budget";
 import { addDays, brl, daysBetween, fmtParts } from "../lib/dates";
 
@@ -23,11 +23,21 @@ export default function TripForm({ trip, destination, projection, onChange }: Pr
     if (!v) return;
     set("returnDate", v < trip.departDate ? trip.departDate : v);
   };
-  const cityOptions = CITY_GROUPS.map((g) => (
+  // Saída: só Brasil; aeroportos da mesma cidade ficam juntos e aparecem pelo nome do aeroporto.
+  const originOptions = ORIGIN_GROUPS.map((g) => (
+    <optgroup key={g.label} label={g.label}>
+      {g.cities.map((c) => (
+        <option key={c.code} value={c.code}>
+          {c.airport ? `${c.airport} (${c.code})` : `${c.name} (${c.code})`}
+        </option>
+      ))}
+    </optgroup>
+  ));
+  const destinationOptions = CITY_GROUPS.map((g) => (
     <optgroup key={g.country} label={g.country}>
       {g.cities.map((c) => (
         <option key={c.code} value={c.code}>
-          {c.name} ({c.code})
+          {cityLabel(c)}
         </option>
       ))}
     </optgroup>
@@ -75,13 +85,13 @@ export default function TripForm({ trip, destination, projection, onChange }: Pr
           <label>
             Saindo de
             <select value={trip.origin} onChange={(e) => set("origin", e.target.value)}>
-              {cityOptions}
+              {originOptions}
             </select>
           </label>
           <label>
             Destino
             <select value={trip.destination} onChange={(e) => set("destination", e.target.value)}>
-              {cityOptions}
+              {destinationOptions}
             </select>
           </label>
           <label>

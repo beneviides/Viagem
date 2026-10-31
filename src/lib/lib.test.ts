@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CITIES, CITY_GROUPS, cityByCode } from "./cities";
+import { CITIES, CITY_GROUPS, ORIGIN_GROUPS, cityByCode, cityLabel } from "./cities";
 import { dailyProjection, forecast, projected, realized, totals } from "./budget";
 import { countdownLabel, daysBetween } from "./dates";
 import { outsideRange, shiftItinerary } from "./itinerary";
@@ -171,5 +171,25 @@ describe("lista de cidades", () => {
     expect(climateFor(cityByCode("POA")!, "2027-07-10")).toBe("mild");
     expect(climateFor(cityByCode("POA")!, "2027-01-10")).toBe("warm");
     expect(climateFor(cityByCode("FOR")!, "2027-07-10")).toBe("warm");
+  });
+});
+
+describe("saídas e aeroportos", () => {
+  const origins = ORIGIN_GROUPS.flatMap((g) => g.cities);
+  it("só cidades do Brasil, sem repetir nenhuma", () => {
+    expect(origins.every((c) => c.country === "Brasil")).toBe(true);
+    expect(new Set(origins.map((c) => c.code)).size).toBe(origins.length);
+    expect(origins.length).toBe(CITIES.filter((c) => c.country === "Brasil").length);
+  });
+  it("São Paulo tem 3 aeroportos juntos e o Rio tem 2", () => {
+    const sp = ORIGIN_GROUPS.find((g) => g.label.startsWith("São Paulo"))!;
+    expect(sp.cities.map((c) => c.code).sort()).toEqual(["CGH", "GRU", "VCP"]);
+    const rio = ORIGIN_GROUPS.find((g) => g.label.startsWith("Rio de Janeiro"))!;
+    expect(rio.cities.map((c) => c.code).sort()).toEqual(["GIG", "SDU"]);
+    expect(ORIGIN_GROUPS[ORIGIN_GROUPS.length - 1].label).toBe("Outras cidades");
+  });
+  it("o rótulo identifica o aeroporto quando a cidade tem vários", () => {
+    expect(cityLabel(cityByCode("CGH")!)).toBe("São Paulo · Congonhas (CGH)");
+    expect(cityLabel(cityByCode("BSB")!)).toBe("Brasília (BSB)");
   });
 });

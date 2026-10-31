@@ -19,7 +19,7 @@ export function climateFor(city: City, departDate: string): Climate {
   return winter ? (city.coldWinter ? "cold" : "mild") : summer ? "warm" : "mild";
 }
 
-const BEACH = new Set(["GIG", "SSA", "FLN", "REC", "CUN", "MIA", "FOR", "NAT", "MCZ", "JPA", "SLZ", "VIX", "BPS", "PUJ"]);
+const BEACH = new Set(["GIG", "SDU", "SSA", "FLN", "REC", "CUN", "MIA", "FOR", "NAT", "MCZ", "JPA", "SLZ", "VIX", "BPS", "PUJ"]);
 
 interface Suggestion {
   key: string;
