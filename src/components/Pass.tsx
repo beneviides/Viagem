@@ -311,7 +311,7 @@ function SingleLegCard({
           </span>
         </button>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        <div className="pass-top-actions">
           {onToggleTheme && (
             <button
               type="button"

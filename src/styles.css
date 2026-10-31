@@ -439,7 +439,16 @@ main {
   font: 600 11px/1 var(--body);
   letter-spacing: 0.04em;
   color: var(--hero-muted);
-  flex-wrap: nowrap;
+  /* Em telas estreitas os itens da direita descem para uma segunda linha em vez de serem cortados. */
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+.pass-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .pass-link {
