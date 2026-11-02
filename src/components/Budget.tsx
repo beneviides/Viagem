@@ -266,17 +266,7 @@ export default function Budget({
           <div className="card-summary" aria-label="Resumo do cartão">
             {cards.onCard > 0 && (
               <span className="chip">
-                💳 No cartão <b>{brl(cards.onCard)}</b>
-              </span>
-            )}
-            {cards.installedCount > 0 && (
-              <span className="chip">
-                Parcelado <b>{brl(cards.installed)}</b> ({cards.installedCount} {cards.installedCount === 1 ? "compra" : "compras"})
-              </span>
-            )}
-            {cards.installedCount > 0 && (
-              <span className="chip">
-                Parcelas por mês <b>{brlCents(cards.perMonth)}</b>
+                💳 No cartão <b>{brl(cards.onCard)}</b> · detalhes na aba Cartão
               </span>
             )}
             {cards.outsideBudget > 0 && (

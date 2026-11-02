@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Category, Expense, Trip } from "../types";
 import { brl, brlCents, todayISO } from "../lib/dates";
-import { CardPurchase, afterClosing, cardPurchases, dayLabel, firstInstallmentMonth, monthIndexOfDate, monthLabel, monthlyBills, ruleOf } from "../lib/cartao";
+import { afterClosing, cardPurchases, dayLabel, firstInstallmentMonth, monthIndexOfDate, monthLabel, monthlyBills, purchaseStatus, ruleOf } from "../lib/cartao";
 import { flagsOf, withFlags } from "../lib/expenseFlags";
 import { parseNumberInput } from "../lib/numbers";
 import ExpenseOptions, { ExpenseFlags } from "./ExpenseOptions";
@@ -23,19 +23,6 @@ interface Props {
   expenses: Expense[];
   onChange: (e: Expense[]) => void;
   onTripChange: (t: Trip) => void;
-}
-
-/** Fala do andamento da compra, em palavras: quando começa, quando acaba, quantas faltam. */
-function statusText(p: CardPurchase): { text: string; tone: "ok" | "info" | "warn" } {
-  if (p.status === "sem-data" || p.firstMonth === undefined || p.lastMonth === undefined) return { text: "Informe quando comprou para ver quando acaba", tone: "warn" };
-  if (p.installments === 1) {
-    return p.status === "quitada"
-      ? { text: `Cobrada na fatura de ${monthLabel(p.firstMonth)}`, tone: "ok" }
-      : { text: `Vence na fatura de ${monthLabel(p.firstMonth)}`, tone: "info" };
-  }
-  if (p.status === "quitada") return { text: `✓ Quitada: a última parcela foi em ${monthLabel(p.lastMonth)}`, tone: "ok" };
-  if (p.status === "nao-comecou") return { text: `Começa em ${monthLabel(p.firstMonth)} e acaba em ${monthLabel(p.lastMonth)}`, tone: "info" };
-  return { text: `Faltam ${p.remaining} de ${p.installments} · acaba em ${monthLabel(p.lastMonth)}`, tone: "info" };
 }
 
 export default function Cartao({ trip, expenses, onChange, onTripChange }: Props) {
@@ -232,10 +219,17 @@ export default function Cartao({ trip, expenses, onChange, onTripChange }: Props
               </div>
             ))}
           </div>
-          <p className="muted" style={{ marginTop: 8 }}>
-            <span className="bill-dot" aria-hidden="true">●</span> mês atual. Meses que já passaram aparecem mais claros.
-            {bills.length > 36 && " Mostrando os primeiros 36 meses."}
-          </p>
+          {(bills.some((b) => b.month === now) || bills.some((b) => b.month < now) || bills.length > 36) && (
+            <p className="muted" style={{ marginTop: 8 }}>
+              {bills.some((b) => b.month === now) && (
+                <>
+                  <span className="bill-dot" aria-hidden="true">●</span> mês atual.{" "}
+                </>
+              )}
+              {bills.some((b) => b.month < now) && "Meses que já passaram aparecem mais claros. "}
+              {bills.length > 36 && "Mostrando os primeiros 36 meses."}
+            </p>
+          )}
         </section>
       )}
 
@@ -248,7 +242,7 @@ export default function Cartao({ trip, expenses, onChange, onTripChange }: Props
           <div style={{ display: "grid", gap: 8 }}>
             {purchases.map((p) => {
               const e = p.expense;
-              const st = statusText(p);
+              const st = purchaseStatus(p);
               return (
                 <div key={e.id} className="exp-item">
                   <div className="purchase">
@@ -265,11 +259,6 @@ export default function Cartao({ trip, expenses, onChange, onTripChange }: Props
                           {afterClosing(e.purchasedOn, closingDay)
                             ? `Depois do fechamento (dia ${closingDay}): entrou na fatura seguinte`
                             : `Até o fechamento (dia ${closingDay}): entrou na fatura deste mês`}
-                        </div>
-                      )}
-                      {p.installments >= 2 && p.firstMonth !== undefined && p.lastMonth !== undefined && (
-                        <div className="muted" style={{ fontSize: 12 }}>
-                          1ª em {monthLabel(p.firstMonth)} · última em {monthLabel(p.lastMonth)}
                         </div>
                       )}
                       <div className="exp-tags">

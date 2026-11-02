@@ -117,3 +117,23 @@ export function cardPurchases(expenses: Expense[], rule: CardRule | boolean, tod
       return b.expense.purchasedOn.localeCompare(a.expense.purchasedOn);
     });
 }
+
+export interface PurchaseStatusText {
+  text: string;
+  tone: "ok" | "info" | "warn";
+}
+
+/** Uma frase só sobre o andamento da compra: já traz quando começa e quando acaba, sem repetir em outro lugar. */
+export function purchaseStatus(p: CardPurchase): PurchaseStatusText {
+  if (p.status === "sem-data" || p.firstMonth === undefined || p.lastMonth === undefined) {
+    return { text: "Informe quando comprou para ver quando acaba", tone: "warn" };
+  }
+  const first = monthLabel(p.firstMonth);
+  const last = monthLabel(p.lastMonth);
+  if (p.installments === 1) {
+    return p.status === "quitada" ? { text: `Cobrada na fatura de ${first}`, tone: "ok" } : { text: `Vence na fatura de ${first}`, tone: "info" };
+  }
+  if (p.status === "quitada") return { text: `✓ Quitada em ${last}`, tone: "ok" };
+  if (p.status === "nao-comecou") return { text: `Começa em ${first} · acaba em ${last}`, tone: "info" };
+  return { text: `Faltam ${p.remaining} de ${p.installments} · acaba em ${last}`, tone: "info" };
+}

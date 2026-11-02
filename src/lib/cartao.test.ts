@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { afterClosing, cardPurchases, dayLabel, describePurchase, firstInstallmentMonth, installmentAmounts, monthIndex, monthLabel, monthlyBills } from "./cartao";
+import { afterClosing, cardPurchases, dayLabel, describePurchase, firstInstallmentMonth, installmentAmounts, monthIndex, monthLabel, monthlyBills, purchaseStatus } from "./cartao";
 import { cardSummary, installmentValue } from "./budget";
 import { sanitizeTripData } from "./storage";
 import { Expense } from "../types";
@@ -167,5 +167,27 @@ describe("depois do fechamento?", () => {
     expect(afterClosing("2027-03-31", 31)).toBe(false);
     expect(afterClosing("2027-03-29", 28)).toBe(true);
     expect(afterClosing("2027-03-29", undefined)).toBe(false); // sem dia de fechamento
+  });
+});
+
+describe("frase de andamento sem repetir informação", () => {
+  const compra = ex({ amount: 600, installments: 3, purchasedOn: "2027-03-20" });
+  const status = (hojeIso: string, e = compra) => purchaseStatus(describePurchase(e, false, hoje(hojeIso)));
+  it("cada situação diz o que importa, uma vez só", () => {
+    expect(status("2027-03-25")).toEqual({ text: "Começa em abr/2027 · acaba em jun/2027", tone: "info" });
+    expect(status("2027-05-10")).toEqual({ text: "Faltam 1 de 3 · acaba em jun/2027", tone: "info" });
+    expect(status("2027-07-01")).toEqual({ text: "✓ Quitada em jun/2027", tone: "ok" });
+  });
+  it("nenhum mês aparece duas vezes na mesma frase", () => {
+    for (const d of ["2027-03-25", "2027-05-10", "2027-07-01"]) {
+      const meses = status(d).text.match(/[a-z]{3}\/\d{4}/g) ?? [];
+      expect(new Set(meses).size).toBe(meses.length);
+    }
+  });
+  it("à vista e sem data", () => {
+    const avista = ex({ amount: 90, purchasedOn: "2027-05-02" });
+    expect(status("2027-05-10", avista)).toEqual({ text: "Vence na fatura de jun/2027", tone: "info" });
+    expect(status("2027-07-10", avista)).toEqual({ text: "Cobrada na fatura de jun/2027", tone: "ok" });
+    expect(purchaseStatus(describePurchase(ex({ installments: 3 }), false)).tone).toBe("warn");
   });
 });
