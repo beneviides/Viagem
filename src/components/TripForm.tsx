@@ -5,6 +5,7 @@ import { DayProjection, summarizeProjection } from "../lib/budget";
 import { addDays, brl, daysBetween, nightsBetween } from "../lib/dates";
 import { addLegToTrip, multiTripSummary, removeLegFromTrip } from "../lib/legs";
 import { uid } from "../store";
+import NumberField from "./NumberField";
 
 interface Props {
   trip: Trip;
@@ -274,12 +275,11 @@ export default function TripForm({ trip, destination, projection, onChange }: Pr
 
                       <label>
                         Noites
-                        <input
-                          type="number"
+                        <NumberField
                           min={1}
                           max={totalNights}
                           value={leg.nights}
-                          onChange={(e) => updateLeg(idx, { nights: Math.max(1, +e.target.value || 1) })}
+                          onCommit={(n) => updateLeg(idx, { nights: n })}
                         />
                       </label>
 
@@ -299,13 +299,12 @@ export default function TripForm({ trip, destination, projection, onChange }: Pr
 
                       <label>
                         Passagem (R$)
-                        <input
-                          type="number"
+                        <NumberField
+                          integer={false}
                           min={0}
-                          step={10}
                           placeholder="0,00"
                           value={leg.transportCost ?? 0}
-                          onChange={(e) => updateLeg(idx, { transportCost: Math.max(0, +e.target.value || 0) })}
+                          onCommit={(n) => updateLeg(idx, { transportCost: n })}
                         />
                       </label>
                     </div>
