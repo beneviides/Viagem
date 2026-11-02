@@ -1,5 +1,5 @@
 import { brlCents, todayISO } from "../lib/dates";
-import { dayLabel, firstInstallmentMonth, monthLabel } from "../lib/cartao";
+import { CardRule, dayLabel, firstInstallmentMonth, monthLabel } from "../lib/cartao";
 import { ExpenseFlags } from "../lib/expenseFlags";
 
 export type { ExpenseFlags };
@@ -9,8 +9,8 @@ interface Props {
   onChange: (next: ExpenseFlags) => void;
   /** Valor do gasto, para mostrar quanto fica cada parcela. */
   amount?: number;
-  /** true = a 1ª parcela cai no mês da compra; padrão: no mês seguinte. */
-  sameMonth?: boolean;
+  /** Como o cartão cobra (dia de fechamento e vencimento); padrão: fatura vence no mês seguinte. */
+  rule?: CardRule;
   /** Prefixo único dos ids (o formulário e as linhas da lista usam este componente ao mesmo tempo). */
   idPrefix: string;
 }
@@ -32,7 +32,7 @@ function Switch({ checked, onChange, label, hint }: { checked: boolean; onChange
 }
 
 /** As escolhas de um gasto: entra no orçamento, foi no cartão, parcelado e em quantas vezes. */
-export default function ExpenseOptions({ value, onChange, amount, sameMonth = false, idPrefix }: Props) {
+export default function ExpenseOptions({ value, onChange, amount, rule = { sameMonth: false }, idPrefix }: Props) {
   const n = value.installments;
   const each = amount && n ? Math.floor((amount / n) * 100) / 100 : undefined;
   return (
@@ -69,8 +69,8 @@ export default function ExpenseOptions({ value, onChange, amount, sameMonth = fa
           {value.purchasedOn && (
             <span className="opt-hint">
               {n
-                ? `Parcelas de ${monthLabel(firstInstallmentMonth(value.purchasedOn, sameMonth))} a ${monthLabel(firstInstallmentMonth(value.purchasedOn, sameMonth) + n - 1)}: a última cai em ${monthLabel(firstInstallmentMonth(value.purchasedOn, sameMonth) + n - 1)}.`
-                : `Comprado em ${dayLabel(value.purchasedOn)}; cai na fatura de ${monthLabel(firstInstallmentMonth(value.purchasedOn, sameMonth))}.`}
+                ? `Parcelas de ${monthLabel(firstInstallmentMonth(value.purchasedOn, rule))} a ${monthLabel(firstInstallmentMonth(value.purchasedOn, rule) + n - 1)}: a última cai em ${monthLabel(firstInstallmentMonth(value.purchasedOn, rule) + n - 1)}.`
+                : `Comprado em ${dayLabel(value.purchasedOn)}; cai na fatura de ${monthLabel(firstInstallmentMonth(value.purchasedOn, rule))}.`}
             </span>
           )}
         </div>

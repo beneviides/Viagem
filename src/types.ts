@@ -13,8 +13,10 @@ export interface TripLeg {
 export interface Trip {
   /** Nome opcional; sem ele a viagem aparece como "GRU → LIS" ou com a rota completa. */
   name?: string;
-  /** true = a 1ª parcela cai na fatura do mesmo mês da compra; ausente = na do mês seguinte. */
+  /** true = a fatura vence no mesmo mês em que fecha; ausente = vence no mês seguinte ao fechamento. */
   cardFirstSameMonth?: boolean;
+  /** Dia do mês em que a fatura do cartão fecha (1 a 31). Compras depois dele vão para a fatura seguinte. */
+  cardClosingDay?: number;
   origin: string; // código IATA
   destination: string; // código IATA (1º destino / principal)
   departDate: string; // yyyy-mm-dd

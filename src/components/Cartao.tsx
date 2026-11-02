@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Category, Expense, Trip } from "../types";
 import { brl, brlCents, todayISO } from "../lib/dates";
-import { CardPurchase, cardPurchases, dayLabel, monthIndexOfDate, monthLabel, monthlyBills } from "../lib/cartao";
+import { CardPurchase, afterClosing, cardPurchases, dayLabel, firstInstallmentMonth, monthIndexOfDate, monthLabel, monthlyBills, ruleOf } from "../lib/cartao";
 import { flagsOf, withFlags } from "../lib/expenseFlags";
 import { parseNumberInput } from "../lib/numbers";
 import ExpenseOptions, { ExpenseFlags } from "./ExpenseOptions";
@@ -39,7 +39,10 @@ function statusText(p: CardPurchase): { text: string; tone: "ok" | "info" | "war
 }
 
 export default function Cartao({ trip, expenses, onChange, onTripChange }: Props) {
-  const sameMonth = !!trip.cardFirstSameMonth;
+  const rule = ruleOf(trip);
+  const sameMonth = rule.sameMonth;
+  const closingDay = rule.closingDay;
+  const [closingText, setClosingText] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   // Formulário de nova compra
   const [label, setLabel] = useState("");
@@ -51,7 +54,7 @@ export default function Cartao({ trip, expenses, onChange, onTripChange }: Props
 
   const today = new Date();
   const now = monthIndexOfDate(today);
-  const purchases = useMemo(() => cardPurchases(expenses, sameMonth, new Date()), [expenses, sameMonth]);
+  const purchases = useMemo(() => cardPurchases(expenses, { sameMonth, closingDay }, new Date()), [expenses, sameMonth, closingDay]);
   const bills = useMemo(() => monthlyBills(purchases), [purchases]);
   const maxBill = Math.max(1, ...bills.map((b) => b.total));
   const totalOnCard = purchases.reduce((s, p) => s + p.expense.amount, 0);
@@ -93,7 +96,7 @@ export default function Cartao({ trip, expenses, onChange, onTripChange }: Props
           {brl(totalOnCard)}
         </div>
         <p className="muted" style={{ marginTop: 2 }}>
-          {purchases.length} {purchases.length === 1 ? "compra" : "compras"} · {sameMonth ? "1ª parcela no mês da compra" : "1ª parcela na fatura do mês seguinte"}
+          {purchases.length} {purchases.length === 1 ? "compra" : "compras"} · {closingDay ? `fatura fecha dia ${closingDay}` : "sem dia de fechamento"} · vence {sameMonth ? "no mesmo mês" : "no mês seguinte"}
         </p>
         {purchases.length > 0 && (
           <div className="card-summary">
@@ -116,16 +119,39 @@ export default function Cartao({ trip, expenses, onChange, onTripChange }: Props
           </p>
         )}
 
-        <div className="seg-toggle" role="radiogroup" aria-label="Quando cai a 1ª parcela" style={{ marginTop: 14, marginBottom: 0 }}>
+        <div className="form" style={{ marginTop: 14 }}>
+          <label>
+            Dia em que a fatura fecha
+            <input
+              id="cartao-fechamento"
+              inputMode="numeric"
+              maxLength={2}
+              placeholder="Ex.: 25 (deixe vazio se não sabe)"
+              value={closingText ?? (closingDay ?? "")}
+              onFocus={(e) => e.currentTarget.select()}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/\D/g, "").slice(0, 2);
+                setClosingText(raw);
+                const n = Number(raw);
+                if (raw === "") onTripChange({ ...trip, cardClosingDay: undefined });
+                else if (n >= 1 && n <= 31) onTripChange({ ...trip, cardClosingDay: n });
+              }}
+              onBlur={() => setClosingText(null)}
+            />
+          </label>
+        </div>
+        <div className="seg-toggle" role="radiogroup" aria-label="Quando a fatura vence" style={{ marginTop: 10, marginBottom: 0 }}>
           <button type="button" role="radio" aria-checked={!sameMonth} className={!sameMonth ? "on" : ""} onClick={() => onTripChange({ ...trip, cardFirstSameMonth: undefined })}>
-            1ª parcela no mês seguinte
+            Vence no mês seguinte
           </button>
           <button type="button" role="radio" aria-checked={sameMonth} className={sameMonth ? "on" : ""} onClick={() => onTripChange({ ...trip, cardFirstSameMonth: true })}>
-            No mesmo mês
+            Vence no mesmo mês
           </button>
         </div>
         <p className="muted" style={{ marginTop: 6 }}>
-          Depende do fechamento da sua fatura: comprou antes do fechamento, a parcela costuma cair já no mês. Ajuste aqui para o seu cartão.
+          {closingDay
+            ? `Compra até o dia ${closingDay} entra na fatura que fecha neste mês; depois do dia ${closingDay}, na seguinte. No dia do fechamento ainda entra nesta fatura, mas confira com o seu banco.`
+            : "Sem o dia de fechamento, toda compra conta como feita antes do fechamento. Informe o dia para o app saber quando a compra passa para a fatura seguinte."}
         </p>
       </section>
 
@@ -180,7 +206,7 @@ export default function Cartao({ trip, expenses, onChange, onTripChange }: Props
             {n >= 2 ? `${n}x de ${brlCents(Math.floor((value / n) * 100) / 100)}` : "À vista"}
             {" · "}
             {n >= 2 ? "acaba na fatura de " : "cai na fatura de "}
-            {monthLabel(monthIndexOfDate(new Date(purchasedOn + "T12:00:00")) + (sameMonth ? 0 : 1) + (n >= 2 ? n - 1 : 0))}
+            {monthLabel(firstInstallmentMonth(purchasedOn, { sameMonth, closingDay }) + (n >= 2 ? n - 1 : 0))}
           </p>
         )}
         <button style={{ marginTop: 12, width: "100%", minHeight: 40 }} onClick={add}>
@@ -234,6 +260,13 @@ export default function Cartao({ trip, expenses, onChange, onTripChange }: Props
                         {e.purchasedOn ? `Comprou em ${dayLabel(e.purchasedOn)}` : "Sem data da compra"}
                         {p.installments >= 2 && ` · ${p.installments}x de ${brlCents(p.each)}`}
                       </div>
+                      {closingDay && e.purchasedOn && (
+                        <div className="muted" style={{ fontSize: 12 }}>
+                          {afterClosing(e.purchasedOn, closingDay)
+                            ? `Depois do fechamento (dia ${closingDay}): entrou na fatura seguinte`
+                            : `Até o fechamento (dia ${closingDay}): entrou na fatura deste mês`}
+                        </div>
+                      )}
                       {p.installments >= 2 && p.firstMonth !== undefined && p.lastMonth !== undefined && (
                         <div className="muted" style={{ fontSize: 12 }}>
                           1ª em {monthLabel(p.firstMonth)} · última em {monthLabel(p.lastMonth)}
@@ -254,7 +287,7 @@ export default function Cartao({ trip, expenses, onChange, onTripChange }: Props
                   {editing === e.id && (
                     <ExpenseOptions
                       idPrefix={`cartao-${e.id}`}
-                      sameMonth={sameMonth}
+                      rule={{ sameMonth, closingDay }}
                       value={flagsOf(e)}
                       amount={e.amount}
                       onChange={(f: ExpenseFlags) => onChange(expenses.map((x) => (x.id === e.id ? withFlags(x, f) : x)))}

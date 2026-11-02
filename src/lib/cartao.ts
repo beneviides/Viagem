@@ -1,4 +1,4 @@
-import { Expense } from "../types";
+import { Expense, Trip } from "../types";
 import { installmentsOf } from "./budget";
 
 const MONTHS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -37,15 +37,46 @@ export interface CardPurchase {
   bills: [number, number][];
 }
 
-/** Mês da 1ª parcela: o mês seguinte à compra, ou o mesmo mês se a pessoa disser que o cartão cobra assim. */
-export const firstInstallmentMonth = (purchasedOn: string, sameMonth: boolean): number => monthIndex(purchasedOn) + (sameMonth ? 0 : 1);
+/**
+ * Como o cartão cobra.
+ * - `closingDay`: dia em que a fatura fecha. Compra feita até esse dia entra na fatura que fecha neste mês; depois dele, na seguinte.
+ *   Sem o dia, toda compra conta como feita antes do fechamento.
+ * - `sameMonth`: a fatura vence no mês em que fecha (true) ou no mês seguinte (padrão).
+ */
+export interface CardRule {
+  sameMonth: boolean;
+  closingDay?: number;
+}
 
-export function describePurchase(e: Expense, sameMonth: boolean, today: Date = new Date()): CardPurchase {
+export const ruleOf = (t: Pick<Trip, "cardFirstSameMonth" | "cardClosingDay">): CardRule => ({ sameMonth: !!t.cardFirstSameMonth, closingDay: t.cardClosingDay });
+const asRule = (r: CardRule | boolean): CardRule => (typeof r === "boolean" ? { sameMonth: r } : r);
+const daysInMonth = (year: number, month0: number): number => new Date(year, month0 + 1, 0).getDate();
+
+/** Mês da fatura em que a compra entra (o mês em que essa fatura FECHA). */
+export function closingMonth(purchasedOn: string, closingDay?: number): number {
+  const base = monthIndex(purchasedOn);
+  if (!closingDay) return base;
+  const day = Number(purchasedOn.slice(8, 10));
+  // Fechamento dia 31 num mês de 30 dias vale o último dia do mês.
+  const effective = Math.min(closingDay, daysInMonth(Number(purchasedOn.slice(0, 4)), Number(purchasedOn.slice(5, 7)) - 1));
+  return base + (day > effective ? 1 : 0);
+}
+
+/** A compra foi feita depois do fechamento da fatura do mês (vai para a fatura seguinte)? */
+export const afterClosing = (purchasedOn: string, closingDay?: number): boolean => closingMonth(purchasedOn, closingDay) > monthIndex(purchasedOn);
+
+/** Mês da 1ª parcela: o do vencimento da fatura em que a compra entrou. */
+export const firstInstallmentMonth = (purchasedOn: string, rule: CardRule | boolean): number => {
+  const r = asRule(rule);
+  return closingMonth(purchasedOn, r.closingDay) + (r.sameMonth ? 0 : 1);
+};
+
+export function describePurchase(e: Expense, rule: CardRule | boolean, today: Date = new Date()): CardPurchase {
   const n = installmentsOf(e) ?? 1;
   const amounts = installmentAmounts(e.amount, n);
   const base = { expense: e, installments: n, each: amounts[n - 1] ?? amounts[0] };
   if (!e.purchasedOn) return { ...base, charged: 0, remaining: n, toPay: 0, status: "sem-data", bills: [] };
-  const first = firstInstallmentMonth(e.purchasedOn, sameMonth);
+  const first = firstInstallmentMonth(e.purchasedOn, rule);
   const bills = amounts.map((v, i): [number, number] => [first + i, v]);
   const now = monthIndexOfDate(today);
   const charged = bills.filter(([m]) => m <= now).length;
@@ -76,10 +107,10 @@ export function monthlyBills(purchases: CardPurchase[]): MonthBill[] {
 }
 
 /** Compras no cartão da viagem, da mais recente para a mais antiga (sem data por último). */
-export function cardPurchases(expenses: Expense[], sameMonth: boolean, today: Date = new Date()): CardPurchase[] {
+export function cardPurchases(expenses: Expense[], rule: CardRule | boolean, today: Date = new Date()): CardPurchase[] {
   return expenses
     .filter((e) => e.card)
-    .map((e) => describePurchase(e, sameMonth, today))
+    .map((e) => describePurchase(e, rule, today))
     .sort((a, b) => {
       if (!a.expense.purchasedOn) return 1;
       if (!b.expense.purchasedOn) return -1;

@@ -3,7 +3,7 @@ import { Category, Expense, Trip } from "../types";
 import { DayProjection, Totals, cardSummary, countsInBudget, installmentValue, installmentsOf, summarizeProjection } from "../lib/budget";
 import ExpenseOptions, { ExpenseFlags } from "./ExpenseOptions";
 import { flagFields, flagsOf, withFlags } from "../lib/expenseFlags";
-import { dayLabel } from "../lib/cartao";
+import { dayLabel, ruleOf } from "../lib/cartao";
 import { City } from "../lib/cities";
 import { brl, brlCents, fmtParts } from "../lib/dates";
 import { uid } from "../store";
@@ -253,7 +253,7 @@ export default function Budget({
         </button>
         {showOpts && (
           <div id="exp-options">
-            <ExpenseOptions idPrefix="novo" sameMonth={trip.cardFirstSameMonth} value={flags} onChange={setFlags} amount={parseFloat(amount) > 0 ? parseFloat(amount) : undefined} />
+            <ExpenseOptions idPrefix="novo" rule={ruleOf(trip)} value={flags} onChange={setFlags} amount={parseFloat(amount) > 0 ? parseFloat(amount) : undefined} />
           </div>
         )}
 
@@ -351,7 +351,7 @@ export default function Budget({
                   </div>
                 </div>
                 {editingId === e.id && (
-                  <ExpenseOptions idPrefix={`exp-${e.id}`} sameMonth={trip.cardFirstSameMonth} value={flagsOf(e)} onChange={(f) => updateFlags(e.id, f)} amount={e.amount} />
+                  <ExpenseOptions idPrefix={`exp-${e.id}`} rule={ruleOf(trip)} value={flagsOf(e)} onChange={(f) => updateFlags(e.id, f)} amount={e.amount} />
                 )}
                 </div>
               ))}

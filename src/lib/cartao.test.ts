@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cardPurchases, dayLabel, describePurchase, firstInstallmentMonth, installmentAmounts, monthIndex, monthLabel, monthlyBills } from "./cartao";
+import { afterClosing, cardPurchases, dayLabel, describePurchase, firstInstallmentMonth, installmentAmounts, monthIndex, monthLabel, monthlyBills } from "./cartao";
 import { cardSummary, installmentValue } from "./budget";
 import { sanitizeTripData } from "./storage";
 import { Expense } from "../types";
@@ -112,5 +112,60 @@ describe("validação", () => {
     expect(sanitizeTripData({ trip: { cardFirstSameMonth: true } }).trip.cardFirstSameMonth).toBe(true);
     expect(sanitizeTripData({ trip: { cardFirstSameMonth: false } }).trip.cardFirstSameMonth).toBeUndefined();
     expect(sanitizeTripData({ trip: { cardFirstSameMonth: "sim" } }).trip.cardFirstSameMonth).toBeUndefined();
+  });
+});
+
+describe("dia de fechamento da fatura", () => {
+  const mes = (iso: string, rule: Parameters<typeof firstInstallmentMonth>[1]) => monthLabel(firstInstallmentMonth(iso, rule));
+  it("sem o dia de fechamento tudo continua como antes", () => {
+    expect(mes("2027-03-26", { sameMonth: false })).toBe("abr/2027");
+    expect(mes("2027-03-26", { sameMonth: true })).toBe("mar/2027");
+  });
+  it("fecha dia 25, vence no mês seguinte: até o dia 25 vai para abril, depois vai para maio", () => {
+    const r = { sameMonth: false, closingDay: 25 };
+    expect(mes("2027-03-20", r)).toBe("abr/2027");
+    expect(mes("2027-03-25", r)).toBe("abr/2027"); // no dia do fechamento ainda entra nesta fatura
+    expect(mes("2027-03-26", r)).toBe("mai/2027");
+    expect(mes("2027-03-31", r)).toBe("mai/2027");
+  });
+  it("fecha dia 3, vence no mesmo mês: dia 1 vence em março, dia 5 vence em abril", () => {
+    const r = { sameMonth: true, closingDay: 3 };
+    expect(mes("2027-03-01", r)).toBe("mar/2027");
+    expect(mes("2027-03-03", r)).toBe("mar/2027");
+    expect(mes("2027-03-05", r)).toBe("abr/2027");
+  });
+  it("vira o ano", () => {
+    expect(mes("2027-12-28", { sameMonth: false, closingDay: 25 })).toBe("fev/2028");
+    expect(mes("2027-12-20", { sameMonth: false, closingDay: 25 })).toBe("jan/2028");
+  });
+  it("fechamento no dia 31 vale o último dia de meses mais curtos", () => {
+    const r = { sameMonth: true, closingDay: 31 };
+    expect(mes("2027-02-28", r)).toBe("fev/2027"); // fevereiro tem 28 dias: dia 28 ainda é "até o fechamento"
+    expect(mes("2027-04-30", r)).toBe("abr/2027");
+  });
+  it("as parcelas e o fim da compra acompanham a regra", () => {
+    const e = ex({ amount: 600, installments: 3, purchasedOn: "2027-03-26" });
+    const p = describePurchase(e, { sameMonth: false, closingDay: 25 }, hoje("2027-03-30"));
+    expect(monthLabel(p.firstMonth!)).toBe("mai/2027");
+    expect(monthLabel(p.lastMonth!)).toBe("jul/2027");
+    expect(cardPurchases([e], { sameMonth: false, closingDay: 25 }, hoje("2027-03-30"))[0].lastMonth).toBe(p.lastMonth);
+  });
+  it("só guarda dia de fechamento válido (inteiro de 1 a 31)", () => {
+    const d = (v: unknown) => sanitizeTripData({ trip: { cardClosingDay: v } }).trip.cardClosingDay;
+    expect(d(25)).toBe(25);
+    expect(d(1)).toBe(1);
+    expect(d(31)).toBe(31);
+    for (const bad of [0, 32, -1, 2.5, "10", null, NaN]) expect(d(bad)).toBeUndefined();
+  });
+});
+
+describe("depois do fechamento?", () => {
+  it("só é 'depois' quando passa do dia, respeitando meses curtos", () => {
+    expect(afterClosing("2027-03-25", 25)).toBe(false);
+    expect(afterClosing("2027-03-26", 25)).toBe(true);
+    expect(afterClosing("2027-04-30", 31)).toBe(false); // abril só tem 30 dias
+    expect(afterClosing("2027-03-31", 31)).toBe(false);
+    expect(afterClosing("2027-03-29", 28)).toBe(true);
+    expect(afterClosing("2027-03-29", undefined)).toBe(false); // sem dia de fechamento
   });
 });

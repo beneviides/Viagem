@@ -101,6 +101,7 @@ function sanitizeTrip(raw: unknown): Trip {
     budgetTotal: num(r.budgetTotal) ?? d.budgetTotal,
     ...(transport ? { transport } : {}),
     ...(r.cardFirstSameMonth === true ? { cardFirstSameMonth: true } : {}),
+    ...(typeof r.cardClosingDay === "number" && Number.isInteger(r.cardClosingDay) && r.cardClosingDay >= 1 && r.cardClosingDay <= 31 ? { cardClosingDay: r.cardClosingDay } : {}),
     ...(legs && legs.length > 0 ? { legs } : {}),
   };
 }
