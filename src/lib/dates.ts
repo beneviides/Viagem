@@ -52,3 +52,6 @@ export function countdownLabel(depart: string, ret: string, today = new Date()):
 /** Diferença exata em dias (b - a), sem mínimo. */
 export const daysBetween = (a: string, b: string): number =>
   Math.round((new Date(b + "T12:00:00").getTime() - new Date(a + "T12:00:00").getTime()) / 86_400_000);
+
+/** Hoje no fuso do aparelho, como yyyy-mm-dd. */
+export const todayISO = (now: Date = new Date()): string => new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);

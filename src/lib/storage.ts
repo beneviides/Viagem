@@ -100,6 +100,7 @@ function sanitizeTrip(raw: unknown): Trip {
     travelers: Math.round(num(r.travelers, 1, 50) ?? d.travelers),
     budgetTotal: num(r.budgetTotal) ?? d.budgetTotal,
     ...(transport ? { transport } : {}),
+    ...(r.cardFirstSameMonth === true ? { cardFirstSameMonth: true } : {}),
     ...(legs && legs.length > 0 ? { legs } : {}),
   };
 }
@@ -137,6 +138,7 @@ const sanitizeExpenses = (raw: unknown): Expense[] =>
       if (!category || amount === undefined || !label) return [];
       const date = isoDate(x.date);
       const card = x.card === true;
+      const purchasedOn = card ? isoDate(x.purchasedOn) : undefined;
       // Parcelas só valem no cartão e entre 2 e 24; qualquer outra coisa vira "à vista".
       const n = typeof x.installments === "number" && Number.isInteger(x.installments) && x.installments >= 2 && x.installments <= 24 ? x.installments : undefined;
       return [
@@ -150,6 +152,7 @@ const sanitizeExpenses = (raw: unknown): Expense[] =>
           ...(x.inBudget === false ? { inBudget: false } : {}),
           ...(card ? { card: true } : {}),
           ...(card && n ? { installments: n } : {}),
+          ...(purchasedOn ? { purchasedOn } : {}),
         },
       ];
     })

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Category, Expense, Trip } from "../types";
 import { DayProjection, Totals, cardSummary, countsInBudget, installmentValue, installmentsOf, summarizeProjection } from "../lib/budget";
 import ExpenseOptions, { ExpenseFlags } from "./ExpenseOptions";
+import { flagFields, flagsOf, withFlags } from "../lib/expenseFlags";
+import { dayLabel } from "../lib/cartao";
 import { City } from "../lib/cities";
 import { brl, brlCents, fmtParts } from "../lib/dates";
 import { uid } from "../store";
@@ -66,21 +68,7 @@ export default function Budget({
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const cards = cardSummary(expenses);
-  const flagsOf = (e: Expense): ExpenseFlags => ({ inBudget: countsInBudget(e), card: !!e.card, installments: installmentsOf(e) });
-  // Guarda só o que foge do padrão (entra no orçamento, à vista, sem cartão).
-  const flagFields = (f: ExpenseFlags): Partial<Expense> => ({
-    ...(f.inBudget ? {} : { inBudget: false }),
-    ...(f.card ? { card: true } : {}),
-    ...(f.card && f.installments ? { installments: f.installments } : {}),
-  });
-  const updateFlags = (id: string, f: ExpenseFlags) =>
-    onChange(
-      expenses.map((e) => {
-        if (e.id !== id) return e;
-        const { inBudget: _a, card: _b, installments: _c, ...rest } = e;
-        return { ...rest, ...flagFields(f) };
-      })
-    );
+  const updateFlags = (id: string, f: ExpenseFlags) => onChange(expenses.map((e) => (e.id === id ? withFlags(e, f) : e)));
   const optionsSummary = [flags.inBudget ? "Entra no orçamento" : "Fora do orçamento", flags.card ? (flags.installments ? `Cartão ${flags.installments}x` : "Cartão à vista") : "Sem cartão"].join(" · ");
 
   const { perPersonDay, avgDay } = summarizeProjection(destination, projection, trip.travelers);
@@ -265,7 +253,7 @@ export default function Budget({
         </button>
         {showOpts && (
           <div id="exp-options">
-            <ExpenseOptions idPrefix="novo" value={flags} onChange={setFlags} amount={parseFloat(amount) > 0 ? parseFloat(amount) : undefined} />
+            <ExpenseOptions idPrefix="novo" sameMonth={trip.cardFirstSameMonth} value={flags} onChange={setFlags} amount={parseFloat(amount) > 0 ? parseFloat(amount) : undefined} />
           </div>
         )}
 
@@ -332,6 +320,7 @@ export default function Budget({
                         {e.card && (
                           <span className="exp-tag">
                             💳 {installmentsOf(e) ? `${installmentsOf(e)}x de ${brlCents(installmentValue(e) ?? 0)}` : "Cartão à vista"}
+                            {e.purchasedOn ? ` · ${dayLabel(e.purchasedOn)}` : ""}
                           </span>
                         )}
                         {!countsInBudget(e) && <span className="exp-tag out">Fora do orçamento</span>}
@@ -362,7 +351,7 @@ export default function Budget({
                   </div>
                 </div>
                 {editingId === e.id && (
-                  <ExpenseOptions idPrefix={`exp-${e.id}`} value={flagsOf(e)} onChange={(f) => updateFlags(e.id, f)} amount={e.amount} />
+                  <ExpenseOptions idPrefix={`exp-${e.id}`} sameMonth={trip.cardFirstSameMonth} value={flagsOf(e)} onChange={(f) => updateFlags(e.id, f)} amount={e.amount} />
                 )}
                 </div>
               ))}

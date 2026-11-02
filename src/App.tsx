@@ -14,9 +14,10 @@ import Itinerary from "./components/Itinerary";
 import Pass from "./components/Pass";
 import Notes from "./components/Notes";
 import Packing from "./components/Packing";
+import Cartao from "./components/Cartao";
 import Trips from "./components/Trips";
 
-const TABS = ["Viagem", "Hotéis", "Gastos", "Roteiro", "Mala", "Notas"] as const;
+const TABS = ["Viagem", "Hotéis", "Gastos", "Cartão", "Roteiro", "Mala", "Notas"] as const;
 type Tab = (typeof TABS)[number];
 
 const ICONS: Record<Tab, JSX.Element> = {
@@ -34,6 +35,12 @@ const ICONS: Record<Tab, JSX.Element> = {
     </svg>
   ),
   Gastos: (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M14.5 9.2c-.4-.8-1.3-1.2-2.5-1.2-1.4 0-2.5.7-2.5 1.9s1 1.6 2.5 1.9 2.5.7 2.5 1.9-1.1 1.9-2.5 1.9c-1.2 0-2.1-.4-2.5-1.2M12 6.5V8M12 16v1.5" />
+    </svg>
+  ),
+  Cartão: (
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <rect x="2" y="5" width="20" height="14" rx="3" />
       <line x1="2" y1="10" x2="22" y2="10" />
@@ -219,6 +226,7 @@ export default function App() {
                 onChange={setExpenses}
               />
             )}
+            {tab === "Cartão" && <Cartao trip={trip} expenses={expenses} onChange={setExpenses} onTripChange={setTrip} />}
             {tab === "Roteiro" && <Itinerary trip={trip} days={days} onChange={setDays} />}
             {tab === "Mala" && (
               <Packing

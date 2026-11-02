@@ -126,7 +126,7 @@ export function cardSummary(expenses: Expense[]): CardSummary {
     if (n) {
       out.installed += e.amount;
       out.installedCount += 1;
-      out.perMonth += e.amount / n;
+      out.perMonth += installmentValue(e) ?? e.amount / n;
     }
   }
   return out;

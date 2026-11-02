@@ -1,0 +1,271 @@
+import { useMemo, useState } from "react";
+import { Category, Expense, Trip } from "../types";
+import { brl, brlCents, todayISO } from "../lib/dates";
+import { CardPurchase, cardPurchases, dayLabel, monthIndexOfDate, monthLabel, monthlyBills } from "../lib/cartao";
+import { flagsOf, withFlags } from "../lib/expenseFlags";
+import { parseNumberInput } from "../lib/numbers";
+import ExpenseOptions, { ExpenseFlags } from "./ExpenseOptions";
+import { uid } from "../store";
+
+const CATEGORIES: [Category, string][] = [
+  ["voo", "✈️ Passagens"],
+  ["hotel", "🏨 Hospedagem"],
+  ["comida", "🍽️ Alimentação"],
+  ["transporte", "🚕 Transporte local"],
+  ["passeios", "🎟️ Passeios"],
+  ["outros", "🏷️ Outros"],
+];
+const ICON: Record<Category, string> = { voo: "✈️", hotel: "🏨", comida: "🍽️", transporte: "🚕", passeios: "🎟️", outros: "🏷️" };
+const COUNTS = Array.from({ length: 24 }, (_, i) => i + 1); // 1 = à vista
+
+interface Props {
+  trip: Trip;
+  expenses: Expense[];
+  onChange: (e: Expense[]) => void;
+  onTripChange: (t: Trip) => void;
+}
+
+/** Fala do andamento da compra, em palavras: quando começa, quando acaba, quantas faltam. */
+function statusText(p: CardPurchase): { text: string; tone: "ok" | "info" | "warn" } {
+  if (p.status === "sem-data" || p.firstMonth === undefined || p.lastMonth === undefined) return { text: "Informe quando comprou para ver quando acaba", tone: "warn" };
+  if (p.installments === 1) {
+    return p.status === "quitada"
+      ? { text: `Cobrada na fatura de ${monthLabel(p.firstMonth)}`, tone: "ok" }
+      : { text: `Vence na fatura de ${monthLabel(p.firstMonth)}`, tone: "info" };
+  }
+  if (p.status === "quitada") return { text: `✓ Quitada: a última parcela foi em ${monthLabel(p.lastMonth)}`, tone: "ok" };
+  if (p.status === "nao-comecou") return { text: `Começa em ${monthLabel(p.firstMonth)} e acaba em ${monthLabel(p.lastMonth)}`, tone: "info" };
+  return { text: `Faltam ${p.remaining} de ${p.installments} · acaba em ${monthLabel(p.lastMonth)}`, tone: "info" };
+}
+
+export default function Cartao({ trip, expenses, onChange, onTripChange }: Props) {
+  const sameMonth = !!trip.cardFirstSameMonth;
+  const [editing, setEditing] = useState<string | null>(null);
+  // Formulário de nova compra
+  const [label, setLabel] = useState("");
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState<Category>("outros");
+  const [purchasedOn, setPurchasedOn] = useState(todayISO());
+  const [n, setN] = useState(1);
+  const [inBudget, setInBudget] = useState(true);
+
+  const today = new Date();
+  const now = monthIndexOfDate(today);
+  const purchases = useMemo(() => cardPurchases(expenses, sameMonth, new Date()), [expenses, sameMonth]);
+  const bills = useMemo(() => monthlyBills(purchases), [purchases]);
+  const maxBill = Math.max(1, ...bills.map((b) => b.total));
+  const totalOnCard = purchases.reduce((s, p) => s + p.expense.amount, 0);
+  const toPay = Math.round(purchases.reduce((s, p) => s + p.toPay, 0) * 100) / 100;
+  const thisMonth = bills.find((b) => b.month === now)?.total ?? 0;
+  const lastMonth = purchases.reduce<number | undefined>((m, p) => (p.lastMonth === undefined ? m : Math.max(m ?? p.lastMonth, p.lastMonth)), undefined);
+  const withoutDate = purchases.filter((p) => p.status === "sem-data").length;
+  const value = parseNumberInput(amount);
+
+  const add = () => {
+    if (!label.trim() || value === undefined || !(value > 0)) return;
+    onChange([
+      ...expenses,
+      {
+        id: uid(),
+        category,
+        label: label.trim(),
+        amount: value,
+        spent: true,
+        card: true,
+        ...(n >= 2 ? { installments: n } : {}),
+        ...(purchasedOn ? { purchasedOn } : {}),
+        ...(inBudget ? {} : { inBudget: false }),
+      },
+    ]);
+    setLabel("");
+    setAmount("");
+    setN(1);
+    setInBudget(true);
+    setPurchasedOn(todayISO());
+  };
+
+  return (
+    <div className="budget-page" style={{ width: "100%", maxWidth: "100%" }}>
+      {/* Resumo */}
+      <section className="card">
+        <div className="stat-label">Compras no cartão</div>
+        <div className="stat" style={{ fontSize: 32 }}>
+          {brl(totalOnCard)}
+        </div>
+        <p className="muted" style={{ marginTop: 2 }}>
+          {purchases.length} {purchases.length === 1 ? "compra" : "compras"} · {sameMonth ? "1ª parcela no mês da compra" : "1ª parcela na fatura do mês seguinte"}
+        </p>
+        {purchases.length > 0 && (
+          <div className="card-summary">
+            <span className="chip">
+              Neste mês ({monthLabel(now)}) <b>{brlCents(thisMonth)}</b>
+            </span>
+            <span className="chip">
+              Ainda a vencer <b>{brlCents(toPay)}</b>
+            </span>
+            {lastMonth !== undefined && (
+              <span className="chip">
+                Última parcela <b>{monthLabel(lastMonth)}</b>
+              </span>
+            )}
+          </div>
+        )}
+        {withoutDate > 0 && (
+          <p className="exp-tag out" style={{ display: "inline-block", marginTop: 10, whiteSpace: "normal" }} role="status">
+            {withoutDate} {withoutDate === 1 ? "compra está" : "compras estão"} sem data. Toque em ⚙️ para informar quando comprou.
+          </p>
+        )}
+
+        <div className="seg-toggle" role="radiogroup" aria-label="Quando cai a 1ª parcela" style={{ marginTop: 14, marginBottom: 0 }}>
+          <button type="button" role="radio" aria-checked={!sameMonth} className={!sameMonth ? "on" : ""} onClick={() => onTripChange({ ...trip, cardFirstSameMonth: undefined })}>
+            1ª parcela no mês seguinte
+          </button>
+          <button type="button" role="radio" aria-checked={sameMonth} className={sameMonth ? "on" : ""} onClick={() => onTripChange({ ...trip, cardFirstSameMonth: true })}>
+            No mesmo mês
+          </button>
+        </div>
+        <p className="muted" style={{ marginTop: 6 }}>
+          Depende do fechamento da sua fatura: comprou antes do fechamento, a parcela costuma cair já no mês. Ajuste aqui para o seu cartão.
+        </p>
+      </section>
+
+      {/* Nova compra */}
+      <section className="card">
+        <h3>💳 Nova compra no cartão</h3>
+        <div className="form" style={{ width: "100%" }}>
+          <label>
+            O que comprou
+            <input id="cartao-label" placeholder="Ex: Passagem de ida, hotel..." value={label} onChange={(e) => setLabel(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} />
+          </label>
+          <label>
+            Valor total (R$)
+            <input id="cartao-valor" inputMode="decimal" placeholder="0,00" value={amount} onChange={(e) => setAmount(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} />
+          </label>
+          <label>
+            Quando comprou
+            <input id="cartao-data" type="date" value={purchasedOn} max={todayISO()} onChange={(e) => setPurchasedOn(e.target.value)} />
+          </label>
+          <label>
+            Parcelas
+            <select id="cartao-parcelas" value={n} onChange={(e) => setN(Number(e.target.value))}>
+              {COUNTS.map((c) => (
+                <option key={c} value={c}>
+                  {c === 1 ? "À vista" : `${c}x`}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Categoria
+            <select id="cartao-cat" value={category} onChange={(e) => setCategory(e.target.value as Category)}>
+              {CATEGORIES.map(([c, t]) => (
+                <option key={c} value={c}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <button type="button" role="switch" aria-checked={inBudget} className="opt-row" style={{ marginTop: 8 }} onClick={() => setInBudget(!inBudget)}>
+          <span className="opt-text">
+            <span className="opt-label">Entra no orçamento</span>
+            <span className="opt-hint">{inBudget ? "Soma nos totais e na barra do orçamento." : "Fica só na fatura do cartão, fora do orçamento."}</span>
+          </span>
+          <span className={`opt-switch${inBudget ? " on" : ""}`} aria-hidden="true">
+            <span />
+          </span>
+        </button>
+        {value !== undefined && value > 0 && purchasedOn && (
+          <p className="muted" style={{ marginTop: 8 }}>
+            {n >= 2 ? `${n}x de ${brlCents(Math.floor((value / n) * 100) / 100)}` : "À vista"}
+            {" · "}
+            {n >= 2 ? "acaba na fatura de " : "cai na fatura de "}
+            {monthLabel(monthIndexOfDate(new Date(purchasedOn + "T12:00:00")) + (sameMonth ? 0 : 1) + (n >= 2 ? n - 1 : 0))}
+          </p>
+        )}
+        <button style={{ marginTop: 12, width: "100%", minHeight: 40 }} onClick={add}>
+          + Registrar compra
+        </button>
+      </section>
+
+      {/* Fatura mês a mês */}
+      {bills.length > 0 && (
+        <section className="card">
+          <h3>📅 Parcelas mês a mês</h3>
+          <div className="bill-list">
+            {bills.slice(0, 36).map((b) => (
+              <div key={b.month} className={`bill-row${b.month === now ? " now" : ""}${b.month < now ? " past" : ""}`}>
+                <span className="bill-month">
+                  {b.month === now && <span className="bill-dot" role="img" aria-label="mês atual">●</span>}
+                  {monthLabel(b.month)}
+                </span>
+                <span className="bill-bar">
+                  <i style={{ width: `${(b.total / maxBill) * 100}%` }} />
+                </span>
+                <b className="num">{brlCents(b.total)}</b>
+              </div>
+            ))}
+          </div>
+          <p className="muted" style={{ marginTop: 8 }}>
+            <span className="bill-dot" aria-hidden="true">●</span> mês atual. Meses que já passaram aparecem mais claros.
+            {bills.length > 36 && " Mostrando os primeiros 36 meses."}
+          </p>
+        </section>
+      )}
+
+      {/* Compras */}
+      <section className="card">
+        <h3>🧾 Suas compras</h3>
+        {purchases.length === 0 ? (
+          <p className="muted">Nenhuma compra no cartão ainda. Registre acima, ou marque “Paguei no cartão” em um gasto na aba Gastos.</p>
+        ) : (
+          <div style={{ display: "grid", gap: 8 }}>
+            {purchases.map((p) => {
+              const e = p.expense;
+              const st = statusText(p);
+              return (
+                <div key={e.id} className="exp-item">
+                  <div className="purchase">
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {ICON[e.category]} {e.label}
+                      </div>
+                      <div className="muted" style={{ fontSize: 12 }}>
+                        {e.purchasedOn ? `Comprou em ${dayLabel(e.purchasedOn)}` : "Sem data da compra"}
+                        {p.installments >= 2 && ` · ${p.installments}x de ${brlCents(p.each)}`}
+                      </div>
+                      {p.installments >= 2 && p.firstMonth !== undefined && p.lastMonth !== undefined && (
+                        <div className="muted" style={{ fontSize: 12 }}>
+                          1ª em {monthLabel(p.firstMonth)} · última em {monthLabel(p.lastMonth)}
+                        </div>
+                      )}
+                      <div className="exp-tags">
+                        <span className={`exp-tag status-${st.tone}`}>{st.text}</span>
+                        {e.inBudget === false && <span className="exp-tag out">Fora do orçamento</span>}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                      <b className="num">{brlCents(e.amount)}</b>
+                      <button className="ghost" aria-label={`Opções de ${e.label}`} aria-expanded={editing === e.id} title="Editar data, parcelas e orçamento" style={{ padding: "0 6px", minHeight: 28 }} onClick={() => setEditing(editing === e.id ? null : e.id)}>
+                        ⚙️
+                      </button>
+                    </div>
+                  </div>
+                  {editing === e.id && (
+                    <ExpenseOptions
+                      idPrefix={`cartao-${e.id}`}
+                      sameMonth={sameMonth}
+                      value={flagsOf(e)}
+                      amount={e.amount}
+                      onChange={(f: ExpenseFlags) => onChange(expenses.map((x) => (x.id === e.id ? withFlags(x, f) : x)))}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}

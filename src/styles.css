@@ -2011,7 +2011,9 @@ button.opt-toggle:hover { background: var(--line-subtle); box-shadow: none; }
 .opt-count label { font: 600 14px var(--body); color: var(--ink); }
 .opt-count .opt-hint { grid-column: 1 / -1; }
 .card-summary { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-.exp-item { display: grid; gap: 6px; }
+/* minmax(0, 1fr): sem isso, um título comprido (nowrap) alarga a coluna e a página inteira ganha rolagem lateral. */
+.exp-item { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; }
+.purchase > div { min-width: 0; }
 .exp-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .exp-tag {
   padding: 2px 8px;
@@ -2023,3 +2025,19 @@ button.opt-toggle:hover { background: var(--line-subtle); box-shadow: none; }
 }
 .exp-tag.out { background: var(--warn-bg, #fdebdd); color: var(--accent); }
 @media (prefers-reduced-motion: reduce) { .opt-switch, .opt-switch span { transition: none; } }
+
+/* ---------- Aba Cartão ---------- */
+.purchase { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 10px; border-radius: 10px; background: var(--surface-subtle); font-size: 13px; }
+.exp-tag.status-ok { background: var(--ok-bg, #e3f3ec); color: var(--ok); }
+.exp-tag.status-info { background: var(--line-subtle); color: var(--ink); white-space: normal; }
+.exp-tag.status-warn { background: var(--warn-bg, #fdebdd); color: var(--accent); white-space: normal; }
+.bill-list { display: grid; gap: 6px; }
+.bill-row { display: grid; grid-template-columns: 92px minmax(0, 1fr) 82px; align-items: center; gap: 8px; font-size: 12px; }
+.bill-row.past { opacity: 0.55; }
+.bill-month { font-weight: 600; white-space: nowrap; }
+.bill-dot { color: var(--accent); margin-right: 4px; font-size: 10px; }
+.bill-row.now .bill-month { color: var(--accent); }
+.bill-bar { height: 8px; border-radius: 999px; background: var(--line-subtle); overflow: hidden; }
+.bill-bar i { display: block; height: 100%; border-radius: 999px; background: var(--brand); }
+.bill-row.now .bill-bar i { background: var(--accent); }
+.bill-row b { text-align: right; }

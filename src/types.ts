@@ -13,6 +13,8 @@ export interface TripLeg {
 export interface Trip {
   /** Nome opcional; sem ele a viagem aparece como "GRU → LIS" ou com a rota completa. */
   name?: string;
+  /** true = a 1ª parcela cai na fatura do mesmo mês da compra; ausente = na do mês seguinte. */
+  cardFirstSameMonth?: boolean;
   origin: string; // código IATA
   destination: string; // código IATA (1º destino / principal)
   departDate: string; // yyyy-mm-dd
@@ -47,6 +49,8 @@ export interface Expense {
   card?: boolean;
   /** Número de parcelas no cartão (2 a 24). Ausente = à vista. Só vale com `card`. */
   installments?: number;
+  /** Dia em que a compra foi feita no cartão (yyyy-mm-dd). Só vale com `card`. */
+  purchasedOn?: string;
 }
 
 export type Category = "voo" | "hotel" | "comida" | "transporte" | "passeios" | "outros";

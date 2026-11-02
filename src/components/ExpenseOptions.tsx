@@ -1,17 +1,16 @@
-import { brlCents } from "../lib/dates";
+import { brlCents, todayISO } from "../lib/dates";
+import { dayLabel, firstInstallmentMonth, monthLabel } from "../lib/cartao";
+import { ExpenseFlags } from "../lib/expenseFlags";
 
-export interface ExpenseFlags {
-  inBudget: boolean;
-  card: boolean;
-  /** 2 a 24; ausente = à vista */
-  installments?: number;
-}
+export type { ExpenseFlags };
 
 interface Props {
   value: ExpenseFlags;
   onChange: (next: ExpenseFlags) => void;
   /** Valor do gasto, para mostrar quanto fica cada parcela. */
   amount?: number;
+  /** true = a 1ª parcela cai no mês da compra; padrão: no mês seguinte. */
+  sameMonth?: boolean;
   /** Prefixo único dos ids (o formulário e as linhas da lista usam este componente ao mesmo tempo). */
   idPrefix: string;
 }
@@ -33,7 +32,7 @@ function Switch({ checked, onChange, label, hint }: { checked: boolean; onChange
 }
 
 /** As escolhas de um gasto: entra no orçamento, foi no cartão, parcelado e em quantas vezes. */
-export default function ExpenseOptions({ value, onChange, amount, idPrefix }: Props) {
+export default function ExpenseOptions({ value, onChange, amount, sameMonth = false, idPrefix }: Props) {
   const n = value.installments;
   const each = amount && n ? Math.floor((amount / n) * 100) / 100 : undefined;
   return (
@@ -46,7 +45,7 @@ export default function ExpenseOptions({ value, onChange, amount, idPrefix }: Pr
       />
       <Switch
         checked={value.card}
-        onChange={(v) => onChange({ ...value, card: v, installments: v ? value.installments : undefined })}
+        onChange={(v) => onChange({ ...value, card: v, installments: v ? value.installments : undefined, purchasedOn: v ? (value.purchasedOn ?? todayISO()) : undefined })}
         label="Paguei no cartão de crédito"
       />
       {value.card && (
@@ -56,6 +55,25 @@ export default function ExpenseOptions({ value, onChange, amount, idPrefix }: Pr
           label="Parcelei"
           hint={n ? undefined : "À vista no cartão."}
         />
+      )}
+      {value.card && (
+        <div className="opt-count">
+          <label htmlFor={`${idPrefix}-compra`}>Quando comprou?</label>
+          <input
+            id={`${idPrefix}-compra`}
+            type="date"
+            value={value.purchasedOn ?? ""}
+            max={todayISO()}
+            onChange={(e) => onChange({ ...value, purchasedOn: e.target.value || undefined })}
+          />
+          {value.purchasedOn && (
+            <span className="opt-hint">
+              {n
+                ? `Parcelas de ${monthLabel(firstInstallmentMonth(value.purchasedOn, sameMonth))} a ${monthLabel(firstInstallmentMonth(value.purchasedOn, sameMonth) + n - 1)}: a última cai em ${monthLabel(firstInstallmentMonth(value.purchasedOn, sameMonth) + n - 1)}.`
+                : `Comprado em ${dayLabel(value.purchasedOn)}; cai na fatura de ${monthLabel(firstInstallmentMonth(value.purchasedOn, sameMonth))}.`}
+            </span>
+          )}
+        </div>
       )}
       {value.card && n !== undefined && (
         <div className="opt-count">
