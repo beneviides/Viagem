@@ -19,6 +19,9 @@ export const eachDay = (from: string, to: string): string[] => {
 export const fmtDate = (iso: string): string =>
   new Date(iso + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
 
+/** Como `brl`, mas com centavos: para valores de parcela (R$ 83,33). */
+export const brlCents = (n: number): string => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
 export const brl = (n: number): string =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 

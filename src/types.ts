@@ -41,6 +41,12 @@ export interface Expense {
   spent?: boolean;
   /** Dia do gasto real (yyyy-mm-dd), opcional. */
   date?: string;
+  /** false = o gasto existe, mas não entra na soma do orçamento (ex.: outra pessoa pagou, foi reembolsado). Ausente = entra. */
+  inBudget?: boolean;
+  /** true = foi pago no cartão de crédito. */
+  card?: boolean;
+  /** Número de parcelas no cartão (2 a 24). Ausente = à vista. Só vale com `card`. */
+  installments?: number;
 }
 
 export type Category = "voo" | "hotel" | "comida" | "transporte" | "passeios" | "outros";

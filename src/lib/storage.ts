@@ -136,7 +136,22 @@ const sanitizeExpenses = (raw: unknown): Expense[] =>
       const label = str(x.label, 120);
       if (!category || amount === undefined || !label) return [];
       const date = isoDate(x.date);
-      return [{ id: str(x.id, 40) ?? "", category, label, amount, ...(x.spent === true ? { spent: true } : {}), ...(date ? { date } : {}) }];
+      const card = x.card === true;
+      // Parcelas só valem no cartão e entre 2 e 24; qualquer outra coisa vira "à vista".
+      const n = typeof x.installments === "number" && Number.isInteger(x.installments) && x.installments >= 2 && x.installments <= 24 ? x.installments : undefined;
+      return [
+        {
+          id: str(x.id, 40) ?? "",
+          category,
+          label,
+          amount,
+          ...(x.spent === true ? { spent: true } : {}),
+          ...(date ? { date } : {}),
+          ...(x.inBudget === false ? { inBudget: false } : {}),
+          ...(card ? { card: true } : {}),
+          ...(card && n ? { installments: n } : {}),
+        },
+      ];
     })
   );
 

@@ -76,18 +76,60 @@ const sum = (f: Forecast): Totals => {
   return { voo, hotel, comida, transporte, passeios, outros, total: CATEGORIES.reduce((a, c) => a + f[c], 0) };
 };
 
-/** Previsto = estimativa do destino + valores planejados lançados à mão (gastos reais ficam de fora). */
+/** O gasto entra na soma do orçamento? Sim, a menos que a pessoa tenha desligado. */
+export const countsInBudget = (e: Expense): boolean => e.inBudget !== false;
+
+/** Previsto = estimativa do destino + valores planejados lançados à mão (gastos reais e gastos fora do orçamento ficam de fora). */
 export function totals(base: Forecast, expenses: Expense[]): Totals {
   const t = { ...base };
-  for (const e of expenses) if (!e.spent) t[e.category] += e.amount;
+  for (const e of expenses) if (!e.spent && countsInBudget(e)) t[e.category] += e.amount;
   return sum(t);
 }
 
-/** Realizado = soma dos gastos reais lançados. */
+/** Realizado = soma dos gastos reais lançados que entram no orçamento. */
 export function realized(expenses: Expense[]): Totals {
   const t: Forecast = { voo: 0, hotel: 0, comida: 0, transporte: 0, passeios: 0, outros: 0 };
-  for (const e of expenses) if (e.spent) t[e.category] += e.amount;
+  for (const e of expenses) if (e.spent && countsInBudget(e)) t[e.category] += e.amount;
   return sum(t);
+}
+
+/** Parcelas de um gasto: `undefined` quando é à vista (sem cartão ou sem parcelamento). */
+export const installmentsOf = (e: Expense): number | undefined =>
+  e.card && e.installments && e.installments >= 2 ? e.installments : undefined;
+
+/** Valor de cada parcela, em reais e centavos (a diferença de arredondamento fica na primeira). */
+export function installmentValue(e: Expense): number | undefined {
+  const n = installmentsOf(e);
+  return n ? Math.floor((e.amount / n) * 100) / 100 : undefined;
+}
+
+export interface CardSummary {
+  /** Total passado no cartão (todos os gastos marcados como cartão, entrando ou não no orçamento). */
+  onCard: number;
+  /** Quanto disso foi parcelado. */
+  installed: number;
+  /** Quantas compras parceladas. */
+  installedCount: number;
+  /** Soma das parcelas de um mês (todas as compras parceladas, enquanto durarem). */
+  perMonth: number;
+  /** Total de gastos que ficaram fora do orçamento. */
+  outsideBudget: number;
+}
+
+export function cardSummary(expenses: Expense[]): CardSummary {
+  const out: CardSummary = { onCard: 0, installed: 0, installedCount: 0, perMonth: 0, outsideBudget: 0 };
+  for (const e of expenses) {
+    if (!countsInBudget(e)) out.outsideBudget += e.amount;
+    if (!e.card) continue;
+    out.onCard += e.amount;
+    const n = installmentsOf(e);
+    if (n) {
+      out.installed += e.amount;
+      out.installedCount += 1;
+      out.perMonth += e.amount / n;
+    }
+  }
+  return out;
 }
 
 /**
@@ -147,7 +189,7 @@ export function dailyProjection(opts: {
     const transporte = dayCity.daily.transporte * travelers;
     const passeios = planned > 0 ? planned * travelers : dayCity.daily.passeios * travelers;
     const hotel = i < nights ? perNight * rooms : 0;
-    const real = (opts.expenses ?? []).filter((e) => e.spent && e.date === date).reduce((s, e) => s + e.amount, 0);
+    const real = (opts.expenses ?? []).filter((e) => e.spent && countsInBudget(e) && e.date === date).reduce((s, e) => s + e.amount, 0);
 
     return {
       date,

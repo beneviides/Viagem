@@ -1913,3 +1913,113 @@ input[type=file] {
   background: var(--surface-subtle);
 }
 .item .actions .secondary + .secondary { flex: none; }
+
+/* ---------- Opções do gasto: orçamento, cartão e parcelas ---------- */
+.opt-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 12px;
+  min-height: 44px;
+  padding: 8px 12px;
+  background: var(--surface-subtle);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font: 600 13px var(--body);
+  text-align: left;
+}
+.opt-toggle .opt-summary {
+  flex: 1;
+  min-width: 0;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.opt-panel {
+  display: grid;
+  gap: 2px;
+  margin-top: 8px;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.opt-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 6px 0;
+  background: transparent;
+  color: var(--ink);
+  border-radius: 0;
+  border-bottom: 1px solid var(--line-subtle);
+  text-align: left;
+}
+.opt-row:last-of-type { border-bottom: 0; }
+/* O estilo global de botão (fundo azul, sombra, hover) não vale para estes controles. */
+button.opt-row, button.opt-row:hover, button.opt-row:active, button.opt-row:focus {
+  background: transparent;
+  color: var(--ink);
+  box-shadow: none;
+  padding: 6px 0;
+  justify-content: space-between;
+  transform: none;
+}
+button.opt-toggle, button.opt-toggle:active { box-shadow: none; justify-content: flex-start; background: var(--surface-subtle); color: var(--ink); }
+button.opt-toggle:hover { background: var(--line-subtle); box-shadow: none; }
+.opt-text { display: grid; gap: 2px; min-width: 0; }
+.opt-label { font: 600 14px var(--body); }
+.opt-hint { font: 400 12px/1.35 var(--body); color: var(--muted); }
+.opt-switch {
+  flex: none;
+  width: 46px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--line);
+  position: relative;
+  transition: background-color 0.15s;
+}
+.opt-switch span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s;
+}
+.opt-switch.on { background: var(--brand); }
+.opt-switch.on span { transform: translateX(18px); }
+.opt-row:focus-visible, .opt-toggle:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.opt-count {
+  display: grid;
+  grid-template-columns: auto minmax(90px, 1fr);
+  gap: 6px 12px;
+  align-items: center;
+  padding: 8px 0 10px;
+}
+.opt-count label { font: 600 14px var(--body); color: var(--ink); }
+.opt-count .opt-hint { grid-column: 1 / -1; }
+.card-summary { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.exp-item { display: grid; gap: 6px; }
+.exp-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.exp-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--line-subtle);
+  color: var(--ink);
+  font: 600 11px var(--body);
+  white-space: nowrap;
+}
+.exp-tag.out { background: var(--warn-bg, #fdebdd); color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .opt-switch, .opt-switch span { transition: none; } }

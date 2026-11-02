@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Category, Expense, Trip } from "../types";
-import { DayProjection, Totals, summarizeProjection } from "../lib/budget";
+import { DayProjection, Totals, cardSummary, countsInBudget, installmentValue, installmentsOf, summarizeProjection } from "../lib/budget";
+import ExpenseOptions, { ExpenseFlags } from "./ExpenseOptions";
 import { City } from "../lib/cities";
-import { brl, fmtParts } from "../lib/dates";
+import { brl, brlCents, fmtParts } from "../lib/dates";
 import { uid } from "../store";
 
 const LABELS: Record<Category, string> = {
@@ -60,6 +61,27 @@ export default function Budget({
   const [date, setDate] = useState("");
   const [label, setLabel] = useState("");
   const [amount, setAmount] = useState("");
+  const [flags, setFlags] = useState<ExpenseFlags>({ inBudget: true, card: false });
+  const [showOpts, setShowOpts] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const cards = cardSummary(expenses);
+  const flagsOf = (e: Expense): ExpenseFlags => ({ inBudget: countsInBudget(e), card: !!e.card, installments: installmentsOf(e) });
+  // Guarda só o que foge do padrão (entra no orçamento, à vista, sem cartão).
+  const flagFields = (f: ExpenseFlags): Partial<Expense> => ({
+    ...(f.inBudget ? {} : { inBudget: false }),
+    ...(f.card ? { card: true } : {}),
+    ...(f.card && f.installments ? { installments: f.installments } : {}),
+  });
+  const updateFlags = (id: string, f: ExpenseFlags) =>
+    onChange(
+      expenses.map((e) => {
+        if (e.id !== id) return e;
+        const { inBudget: _a, card: _b, installments: _c, ...rest } = e;
+        return { ...rest, ...flagFields(f) };
+      })
+    );
+  const optionsSummary = [flags.inBudget ? "Entra no orçamento" : "Fora do orçamento", flags.card ? (flags.installments ? `Cartão ${flags.installments}x` : "Cartão à vista") : "Sem cartão"].join(" · ");
 
   const { perPersonDay, avgDay } = summarizeProjection(destination, projection, trip.travelers);
   const diff = trip.budgetTotal - summary.total;
@@ -78,10 +100,13 @@ export default function Budget({
         label: label.trim(),
         amount: a,
         ...(kind === "real" ? { spent: true, date: date || undefined } : {}),
+        ...flagFields(flags),
       },
     ]);
     setLabel("");
     setAmount("");
+    setFlags({ inBudget: true, card: false }); // cada gasto começa do padrão
+    setShowOpts(false);
   };
 
   return (
@@ -227,9 +252,52 @@ export default function Budget({
           </label>
         </div>
 
+        <button
+          type="button"
+          className="opt-toggle"
+          aria-expanded={showOpts}
+          aria-controls="exp-options"
+          onClick={() => setShowOpts((v) => !v)}
+        >
+          <span>⚙️ Opções do gasto</span>
+          <span className="opt-summary">{optionsSummary}</span>
+          <span aria-hidden="true">{showOpts ? "▴" : "▾"}</span>
+        </button>
+        {showOpts && (
+          <div id="exp-options">
+            <ExpenseOptions idPrefix="novo" value={flags} onChange={setFlags} amount={parseFloat(amount) > 0 ? parseFloat(amount) : undefined} />
+          </div>
+        )}
+
         <button style={{ marginTop: 12, width: "100%", minHeight: 40 }} onClick={add}>
           + Adicionar aos Gastos
         </button>
+
+        {/* Cartão e fora do orçamento */}
+        {(cards.onCard > 0 || cards.outsideBudget > 0) && (
+          <div className="card-summary" aria-label="Resumo do cartão">
+            {cards.onCard > 0 && (
+              <span className="chip">
+                💳 No cartão <b>{brl(cards.onCard)}</b>
+              </span>
+            )}
+            {cards.installedCount > 0 && (
+              <span className="chip">
+                Parcelado <b>{brl(cards.installed)}</b> ({cards.installedCount} {cards.installedCount === 1 ? "compra" : "compras"})
+              </span>
+            )}
+            {cards.installedCount > 0 && (
+              <span className="chip">
+                Parcelas por mês <b>{brlCents(cards.perMonth)}</b>
+              </span>
+            )}
+            {cards.outsideBudget > 0 && (
+              <span className="chip">
+                Fora do orçamento <b>{brl(cards.outsideBudget)}</b>
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Lista de Despesas Lançadas */}
         {expenses.length > 0 && (
@@ -239,8 +307,8 @@ export default function Budget({
             </div>
             <div style={{ display: "grid", gap: 6 }}>
               {expenses.map((e) => (
+                <div key={e.id} className="exp-item">
                 <div
-                  key={e.id}
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
@@ -259,9 +327,29 @@ export default function Budget({
                       {LABELS[e.category]} · {e.spent ? "Realizado" : "Previsto"}
                       {e.date && ` em ${fmtParts(e.date).day}/${fmtParts(e.date).month}`}
                     </div>
+                    {(e.card || !countsInBudget(e)) && (
+                      <div className="exp-tags">
+                        {e.card && (
+                          <span className="exp-tag">
+                            💳 {installmentsOf(e) ? `${installmentsOf(e)}x de ${brlCents(installmentValue(e) ?? 0)}` : "Cartão à vista"}
+                          </span>
+                        )}
+                        {!countsInBudget(e) && <span className="exp-tag out">Fora do orçamento</span>}
+                      </div>
+                    )}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                    <b className="num" style={{ fontSize: 14 }}>{brl(e.amount)}</b>
+                    <b className="num" style={{ fontSize: 14, opacity: countsInBudget(e) ? 1 : 0.55 }}>{brl(e.amount)}</b>
+                    <button
+                      className="ghost"
+                      aria-label={`Opções de ${e.label}`}
+                      aria-expanded={editingId === e.id}
+                      title="Opções do gasto"
+                      onClick={() => setEditingId(editingId === e.id ? null : e.id)}
+                      style={{ padding: "0 6px", minHeight: 28 }}
+                    >
+                      ⚙️
+                    </button>
                     <button
                       className="ghost"
                       aria-label={`Remover ${e.label}`}
@@ -272,6 +360,10 @@ export default function Budget({
                       ✕
                     </button>
                   </div>
+                </div>
+                {editingId === e.id && (
+                  <ExpenseOptions idPrefix={`exp-${e.id}`} value={flagsOf(e)} onChange={(f) => updateFlags(e.id, f)} amount={e.amount} />
+                )}
                 </div>
               ))}
             </div>
