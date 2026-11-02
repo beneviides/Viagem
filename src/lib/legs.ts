@@ -125,3 +125,52 @@ export function multiTripSummary(trip: Trip): string {
   }
   return legs.map((l) => `${l.destinationCity.name} (${l.nights}n · ${TRANSPORT_INFO[l.transport].icon})`).join(" + ");
 }
+
+/** Cidades sugeridas para a próxima parada, em ordem; usa a primeira que ainda não está na viagem. */
+const NEXT_STOP_CODES = ["SSA", "AJU", "REC", "FOR", "MCZ", "NAT", "JPA", "GIG", "FLN", "BSB", "CWB", "POA"];
+
+const newLegId = () => Math.random().toString(36).slice(2, 10);
+
+/**
+ * Adiciona UMA parada à viagem.
+ * Numa viagem de destino único, a cidade atual passa a ser a Parada 1 (com todas as noites) e a nova vira a Parada 2.
+ * As noites da nova parada saem da última parada que tiver 2 ou mais, para o total da viagem não mudar.
+ */
+export function addLegToTrip(trip: Trip, makeId: () => string = newLegId): Trip {
+  const totalNights = Math.max(1, nightsBetween(trip.departDate, trip.returnDate));
+  const legs: TripLeg[] = trip.legs && trip.legs.length > 0
+    ? trip.legs.map((l) => ({ ...l }))
+    : [{ id: makeId(), destination: trip.destination, nights: totalNights, transport: trip.transport ?? "aviao", transportCost: 0 }];
+
+  let nights = 1;
+  for (let i = legs.length - 1; i >= 0; i--) {
+    if (legs[i].nights >= 2) {
+      nights = Math.floor(legs[i].nights / 2);
+      legs[i].nights -= nights;
+      break;
+    }
+  }
+
+  const used = new Set([...legs.map((l) => l.destination), trip.origin]);
+  const destination = NEXT_STOP_CODES.find((c) => !used.has(c) && cityByCode(c)) ?? "REC";
+  legs.push({ id: makeId(), destination, nights, transport: "aviao", transportCost: 0 });
+  return { ...trip, destination: legs[0].destination, legs };
+}
+
+/**
+ * Remove UMA parada, qualquer uma. As noites dela vão para a parada vizinha (a anterior, ou a seguinte se era a primeira),
+ * para o total da viagem não mudar. Se sobrar só uma parada, a viagem volta a ser de destino único.
+ */
+export function removeLegFromTrip(trip: Trip, legId: string): Trip {
+  const legs = trip.legs;
+  if (!legs) return trip;
+  const idx = legs.findIndex((l) => l.id === legId);
+  if (idx < 0) return trip;
+  const rest = legs.filter((_, i) => i !== idx).map((l) => ({ ...l }));
+  if (rest.length > 0) rest[Math.max(0, idx - 1)].nights += legs[idx].nights;
+  if (rest.length <= 1) {
+    const { legs: _legs, ...single } = trip;
+    return { ...single, destination: rest[0]?.destination ?? trip.destination };
+  }
+  return { ...trip, destination: rest[0].destination, legs: rest };
+}

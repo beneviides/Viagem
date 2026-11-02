@@ -3,7 +3,7 @@ import { TransportType, Trip, TripLeg } from "../types";
 import { ABROAD_GROUPS, City, ORIGIN_GROUPS, cityByCode } from "../lib/cities";
 import { DayProjection, summarizeProjection } from "../lib/budget";
 import { addDays, brl, daysBetween, nightsBetween } from "../lib/dates";
-import { multiTripSummary } from "../lib/legs";
+import { addLegToTrip, multiTripSummary, removeLegFromTrip } from "../lib/legs";
 import { uid } from "../store";
 
 interface Props {
@@ -62,29 +62,6 @@ export default function TripForm({ trip, destination, projection, onChange }: Pr
     </optgroup>
   ));
 
-  // Iniciar modo multidestino com 2 paradas
-  const enableMulti = () => {
-    const half = Math.max(1, Math.floor(totalNights / 2));
-    const rest = Math.max(1, totalNights - half);
-    const initialLegs: TripLeg[] = [
-      {
-        id: uid(),
-        destination: trip.destination,
-        nights: half,
-        transport: "onibus",
-        transportCost: 0,
-      },
-      {
-        id: uid(),
-        destination: trip.destination === "SSA" ? "AJU" : "SSA",
-        nights: rest,
-        transport: "aviao",
-        transportCost: 0,
-      },
-    ];
-    onChange({ ...trip, legs: initialLegs });
-  };
-
   // Exemplo de férias de 15 dias: 7 em Aracaju (ônibus) + 8 em Salvador (avião)
   const applyAracajuSalvadorPreset = () => {
     const depart = trip.departDate || new Date().toISOString().slice(0, 10);
@@ -115,10 +92,6 @@ export default function TripForm({ trip, destination, projection, onChange }: Pr
     });
   };
 
-  const disableMulti = () => {
-    onChange({ ...trip, legs: undefined });
-  };
-
   const updateLeg = (idx: number, patch: Partial<TripLeg>) => {
     if (!trip.legs) return;
     const nextLegs = [...trip.legs];
@@ -127,27 +100,9 @@ export default function TripForm({ trip, destination, projection, onChange }: Pr
     onChange({ ...trip, destination: mainDest, legs: nextLegs });
   };
 
-  const addLeg = () => {
-    const legs = trip.legs ? [...trip.legs] : [];
-    legs.push({
-      id: uid(),
-      destination: "REC",
-      nights: 3,
-      transport: "aviao",
-      transportCost: 0,
-    });
-    onChange({ ...trip, legs });
-  };
-
-  const removeLeg = (idx: number) => {
-    if (!trip.legs) return;
-    const nextLegs = trip.legs.filter((_, i) => i !== idx);
-    if (nextLegs.length <= 1) {
-      onChange({ ...trip, destination: nextLegs[0]?.destination || trip.destination, legs: undefined });
-    } else {
-      onChange({ ...trip, destination: nextLegs[0].destination, legs: nextLegs });
-    }
-  };
+  // Adicionar e remover mexem em UMA parada por vez (a regra fica em lib/legs.ts).
+  const addLeg = () => onChange(addLegToTrip(trip));
+  const removeLeg = (id: string) => onChange(removeLegFromTrip(trip, id));
 
   const legsSumNights = trip.legs ? trip.legs.reduce((s, l) => s + (l.nights || 0), 0) : totalNights;
   const nightsDiff = totalNights - legsSumNights;
@@ -253,28 +208,7 @@ export default function TripForm({ trip, destination, projection, onChange }: Pr
 
       {/* Roteiro e Paradas (Multidestino) */}
       <section className="card">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <h3 style={{ margin: 0 }}>Cidades e Paradas das Férias</h3>
-          {isMulti ? (
-            <button
-              type="button"
-              className="ghost"
-              style={{ fontSize: 12, color: "var(--muted)" }}
-              onClick={disableMulti}
-            >
-              Destino único
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="secondary"
-              style={{ minHeight: 34, padding: "0 12px", fontSize: 12 }}
-              onClick={enableMulti}
-            >
-              + Dividir em mais de uma cidade
-            </button>
-          )}
-        </div>
+        <h3 style={{ marginBottom: 12 }}>Cidades e Paradas das Férias</h3>
 
         {/* Sugestão de 1 clique rápida */}
         <div style={{ background: "var(--surface-subtle)", padding: "10px 14px", borderRadius: 10, display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -312,12 +246,13 @@ export default function TripForm({ trip, destination, projection, onChange }: Pr
                       <span style={{ fontWeight: 600, fontSize: 13, color: "var(--ink)" }}>
                         Parada {idx + 1}: <b>{legCity?.name || leg.destination}</b>
                       </span>
-                      {trip.legs && trip.legs.length > 2 && (
+                      {(
                         <button
                           type="button"
                           className="ghost"
                           title="Remover esta parada"
-                          onClick={() => removeLeg(idx)}
+                          aria-label={`Remover parada ${idx + 1}`}
+                          onClick={() => removeLeg(leg.id)}
                           style={{ padding: "0 6px", minHeight: 28 }}
                         >
                           ✕
@@ -387,20 +322,23 @@ export default function TripForm({ trip, destination, projection, onChange }: Pr
               </p>
             )}
 
-            <button
-              type="button"
-              className="secondary"
-              style={{ marginTop: 12, width: "100%", minHeight: 38 }}
-              onClick={addLeg}
-            >
-              + Adicionar Parada
-            </button>
           </div>
         ) : (
-          <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-            Viagem direta para <b>{destination.name}</b> durante todo o período ({totalNights} noites).
-          </p>
+          <div
+            style={{ background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 12, padding: 12, display: "grid", gap: 4 }}
+          >
+            <span style={{ fontWeight: 600, fontSize: 13, color: "var(--ink)" }}>
+              Parada 1: <b>{destination.name}</b>
+            </span>
+            <p className="muted" style={{ margin: 0, fontSize: 12 }}>
+              {totalNights} {totalNights === 1 ? "noite" : "noites"}. Para trocar a cidade, use o campo Destino acima.
+            </p>
+          </div>
         )}
+
+        <button type="button" className="secondary" style={{ marginTop: 12, width: "100%", minHeight: 38 }} onClick={addLeg}>
+          + Adicionar parada
+        </button>
       </section>
 
       {/* Resumo da Estimativa Diária */}

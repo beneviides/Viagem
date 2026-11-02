@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { uid, useWorkspace } from "./store";
 import { applyUpdate, useOffline, usePwa } from "./pwa";
+import { addLegToTrip } from "./lib/legs";
 import { Expense, Hotel, ItineraryDay, PackItem, Trip } from "./types";
 import { cityByCode } from "./lib/cities";
 import { daysBetween, nightsBetween } from "./lib/dates";
@@ -132,33 +133,7 @@ export default function App() {
     );
   }
 
-  const addLegToActiveTrip = () => {
-    const totalNights = Math.max(1, nightsBetween(trip.departDate, trip.returnDate));
-    const currentLegs = trip.legs && trip.legs.length > 0 ? [...trip.legs] : [
-      {
-        id: uid(),
-        destination: trip.destination,
-        nights: Math.max(1, Math.floor(totalNights / 2)),
-        transport: "onibus" as const,
-        transportCost: 0,
-      },
-    ];
-    const nextCity = !currentLegs.some((l) => l.destination === "SSA")
-      ? "SSA"
-      : !currentLegs.some((l) => l.destination === "AJU")
-        ? "AJU"
-        : "REC";
-    const usedNights = currentLegs.reduce((s, l) => s + l.nights, 0);
-    const remainingNights = Math.max(1, totalNights - usedNights);
-    currentLegs.push({
-      id: uid(),
-      destination: nextCity,
-      nights: remainingNights,
-      transport: "aviao",
-      transportCost: 0,
-    });
-    setTrip({ ...trip, legs: currentLegs });
-  };
+  const addLegToActiveTrip = () => setTrip(addLegToTrip(trip));
 
   const passElement = (
     <Pass
